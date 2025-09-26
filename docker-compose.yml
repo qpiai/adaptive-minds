@@ -1,0 +1,60 @@
+services:
+  adaptive-lora:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: adaptive-minds-server
+    gpus: all
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - HF_TOKEN=${HF_TOKEN}
+    volumes:
+      # Only mount build directory if needed for other purposes
+      - ./build:/app/build
+    ports:
+      - "8765:8765"  # FastAPI default port
+      - "8501:8501"  # Streamlit port
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    # Step by step: 1) Download models, 2) Start server, 3) Wait for server, 4) Start UI
+    command: >
+      sh -c "
+        echo '📥 STEP 1: Downloading models from Hugging Face...' &&
+        python /app/build/download_models.py &&
+        echo '✅ STEP 1 COMPLETE: All models downloaded!' &&
+        echo '' &&
+        echo '🚀 STEP 2: Starting FastAPI server...' &&
+        cd /app/build &&
+        python server.py &
+        SERVER_PID=\$! &&
+        echo '✅ STEP 2 COMPLETE: FastAPI server started (PID: '\$SERVER_PID')' &&
+        echo '' &&
+        echo '⏳ STEP 3: Waiting for server to be fully ready...' &&
+        sleep 20 &&
+        attempt=1 &&
+        while ! curl -s http://localhost:8765/status > /dev/null 2>&1; do
+          echo '⏳ Attempt '\$attempt': Server not ready yet, waiting 30 more seconds...' &&
+          sleep 30 &&
+          attempt=\$((attempt + 1)) &&
+          if [ \$attempt -gt 20 ]; then
+            echo '❌ Server failed to start after 100 seconds' &&
+            exit 1
+          fi
+        done &&
+        echo '✅ STEP 3 COMPLETE: FastAPI server is ready and responding!' &&
+        echo '' &&
+        echo '🎨 STEP 4: Starting Streamlit frontend...' &&
+        streamlit run /app/build/app_frontend.py --server.port 8501 --server.address 0.0.0.0 &
+        echo '✅ STEP 4 COMPLETE: Streamlit frontend started!' &&
+        echo '' &&
+        echo '🎉 ALL SYSTEMS READY!' &&
+        echo '📡 FastAPI: http://localhost:8765' &&
+        echo '🌐 Streamlit: http://localhost:8501' &&
+        wait
+      " 
