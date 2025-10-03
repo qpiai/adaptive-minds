@@ -624,13 +624,13 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 - **Discussions**: [GitHub Discussions](https://github.com/qpiai/adaptive-minds/discussions)
 - **HuggingFace**: [Model Collection](https://huggingface.co/collections/pavan01729/adaptive-minds-68cbab3565664604be49a462)
 
----
 
-## ⭐ Star History
+
+<!-- ## ⭐ Star History
 
 If you find this project useful, please consider giving it a star!
 
-[![Star History Chart](https://api.star-history.com/svg?repos=qpiai/adaptive-minds&type=Date)](https://star-history.com/#qpiai/adaptive-minds&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=qpiai/adaptive-minds&type=Date)](https://star-history.com/#qpiai/adaptive-minds&Date) -->
 
 ---
 
