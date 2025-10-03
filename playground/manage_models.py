@@ -145,6 +145,10 @@ class ModelManager:
         
         # Build metadata structure
         metadata = {
+            "base_model": {
+                "name": self.config['base_model']['name'],
+                "path": self.config['base_model']['local_path']
+            },
             "router_prompt_template": self.config['router']['prompt_template'],
             "adapters": {},
             "_metadata": self.config['metadata']

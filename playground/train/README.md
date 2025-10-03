@@ -11,15 +11,29 @@ uv sync --extra training
 ```
 
 ### Simple Training
+
+**For Llama models (original):**
 ```bash
 # Train a medical expert
-uv run python simple_train.py --dataset medalpaca/medical_meadow_medical_flashcards --lora-name medical-expert
+uv run python train.py --dataset medalpaca/medical_meadow_medical_flashcards --lora-name medical-expert
 
 # Train a QA expert
-uv run python simple_train.py --dataset squad --lora-name qa-expert --steps 300
+uv run python train.py --dataset squad --lora-name qa-expert --steps 300
 
 # Train with custom parameters
-uv run python simple_train.py --dataset your-dataset --lora-name custom-expert --steps 1000 --batch-size 4 --lora-r 32
+uv run python train.py --dataset your-dataset --lora-name custom-expert --steps 1000 --batch-size 4 --lora-r 32
+```
+
+**For Qwen models (new):**
+```bash
+# Train a medical expert with Qwen
+uv run python train_qwen.py --dataset medalpaca/medical_meadow_medical_flashcards --lora-name medical-expert
+
+# Train a QA expert with Qwen
+uv run python train_qwen.py --dataset squad --lora-name qa-expert --steps 300
+
+# Train with custom parameters
+uv run python train_qwen.py --dataset your-dataset --lora-name custom-expert --steps 1000 --batch-size 4 --lora-r 32
 ```
 
 ## 📋 Parameters
@@ -87,8 +101,9 @@ curl -X POST http://localhost:8765/chat \
 
 ```
 playground/train/
-├── simple_train.py         # Main training script
-├── prepare_data.py         # Data preparation utilities
+├── train.py               # Llama training script
+├── train_qwen.py          # Qwen training script
+├── prepare_data.py        # Data preparation utilities
 ├── train_lora.py          # Advanced training script
 ├── configs/               # Training configurations
 ├── data/                  # Local training data

@@ -79,31 +79,7 @@ lora_adapters:
       - business communication
       - personal communication
     enabled: true
-  
-  # Finance LoRA - Trained locally
-  - name: "Finance"
-    source: "local"
-    local_path: "./loras/finance"
-    description: "Finance expert for investments, banking, and economic topics"
-    system_prompt: "You are a finance expert. Provide detailed financial analysis, specific strategies, and actionable advice. Include concrete examples, calculations, and step-by-step guidance. Never mention external resources - deliver complete financial insights directly."
-    keywords:
-      - finance
-      - financial
-      - money
-      - investment
-      - stock
-      - bond
-      - trading
-      - banking
-      - loan
-      - interest
-      - economics
-      - budget
-      - cryptocurrency
-      - company
-      - business
-      - financial planning
-    enabled: true
+    
 
   # Example 2: Local LoRA (trained by you)
   # Uncomment and configure after training:

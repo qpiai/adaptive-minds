@@ -107,7 +107,12 @@ LORA_ADAPTERS = {}  # Will be loaded from JSON at startup
 
 def load_base_model():
     """Load the base model and tokenizer."""
-    base_model_path = "./base_model/llama-3.1-8B-instruct"
+    # Get base model path from metadata
+    if not hasattr(global_state, 'adapter_config') or 'base_model' not in global_state.adapter_config:
+        raise HTTPException(status_code=500, detail="Base model configuration not found in metadata")
+    
+    base_model_path = global_state.adapter_config['base_model']['path']
+    print(f"🔄 Loading base model from: {base_model_path}")
     
     try:
         tokenizer = AutoTokenizer.from_pretrained(base_model_path)
@@ -133,7 +138,31 @@ def load_adapter(adapter_name):
     
     try:
         adapter_path = LORA_ADAPTERS[adapter_name]["path"]
-        model = PeftModel.from_pretrained(global_state.base_model, adapter_path)
+        
+        # Check if adapter_config.json exists directly in the path
+        if os.path.exists(os.path.join(adapter_path, "adapter_config.json")):
+            # Direct LoRA format
+            final_path = adapter_path
+        else:
+            # Check for checkpoint directories
+            checkpoint_dirs = []
+            if os.path.exists(adapter_path):
+                for item in os.listdir(adapter_path):
+                    item_path = os.path.join(adapter_path, item)
+                    if os.path.isdir(item_path) and item.startswith("checkpoint-"):
+                        checkpoint_dirs.append((item, int(item.split("-")[1])))
+            
+            if checkpoint_dirs:
+                # Sort by checkpoint number and use the highest (latest)
+                checkpoint_dirs.sort(key=lambda x: x[1], reverse=True)
+                latest_checkpoint = checkpoint_dirs[0][0]
+                final_path = os.path.join(adapter_path, latest_checkpoint)
+                print(f"🔄 Using checkpoint: {latest_checkpoint}")
+            else:
+                # No checkpoints found, try the original path
+                final_path = adapter_path
+        
+        model = PeftModel.from_pretrained(global_state.base_model, final_path)
         model.eval()
         global_state.loaded_adapters[adapter_name] = model
         return model
