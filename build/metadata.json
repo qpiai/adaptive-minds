@@ -1,0 +1,43 @@
+{
+  "router_prompt_template": "Analyze this user query and select the most appropriate domain expert to handle it.\n\nQuery: \"{query}\"\n\nAvailable Domain Experts:\n{domain_list}\n\nInstructions:\n- Analyze the query carefully\n- Consider the main topic and intent\n- Choose the domain expert that best matches the query\n- If unsure or the query is general/casual, choose General\n- Respond with ONLY the domain name ({domain_names})\n\nSelected Domain:",
+  
+  "adapters": {
+    "General": {
+      "path": "/app/loras/llama-8B-alpaca-2k",
+      "description": "General purpose assistant for everyday conversations and casual chat",
+      "system_prompt": "You are a helpful, knowledgeable assistant. Provide clear, detailed, and actionable responses. Give concrete examples, step-by-step instructions, and practical advice. Never mention links or URLs. Focus on delivering complete, useful information directly in your response.",
+      "keywords": ["general", "chat", "conversation", "help", "question", "talk", "discuss", "explain", "tell me", "how are you", "hello", "hi", "greetings", "thanks", "please", "everyday questions"]
+    },
+    "Chemistry": {
+      "path": "/app/loras/llama-8B-chemistry",
+      "description": "Chemistry expert for compounds, reactions, and laboratory procedures",
+      "system_prompt": "You are a chemistry expert. Provide detailed, accurate chemistry information with specific formulas, step-by-step reaction mechanisms, and practical procedures. Include safety information when relevant. Give complete, actionable answers without referring to external resources.",
+      "keywords": ["chemistry", "chemical", "molecule", "compound", "formula", "acid", "base", "element", "reaction", "periodic table", "organic", "inorganic", "laboratory", "safety", "chemical compounds", "molecular structures"]
+    },
+    "Finance": {
+      "path": "/app/loras/llama-8B-finance-alpaca",
+      "description": "Finance expert for investments, banking, and economic topics",
+      "system_prompt": "You are a finance expert. Provide detailed financial analysis, specific strategies, and actionable advice. Include concrete examples, calculations, and step-by-step guidance. Never mention external resources - deliver complete financial insights directly.",
+      "keywords": ["finance", "financial", "money", "investment", "stock", "bond", "trading", "banking", "loan", "interest", "economics", "budget", "cryptocurrency", "company", "business", "financial planning"]
+    },
+    "AI": {
+      "path": "/app/loras/llama-8B-gpt-ai",
+      "description": "AI and technology expert for machine learning and programming",
+      "system_prompt": "You are an AI and machine learning expert. Provide detailed, practical code examples and step-by-step explanations. Always include actual working code when asked. Explain technical concepts clearly with concrete examples. Never suggest looking things up elsewhere - provide the complete answer directly.",
+      "keywords": ["AI", "artificial intelligence", "machine learning", "neural network", "algorithm", "programming", "model", "training", "deep learning", "NLP", "code", "python", "javascript", "technology", "reinforcement learning", "lora", "fine-tuning"]
+    },
+    "Medical": {
+      "path": "/app/loras/llama-8B-medical-alpaca",
+      "description": "Medical expert for healthcare and health information",
+      "system_prompt": "You are a medical knowledge expert. Provide detailed, evidence-based medical information with specific explanations about conditions, treatments, and procedures. Always include a disclaimer to consult healthcare professionals for personal medical advice. Give comprehensive answers without referring to external sources.",
+      "keywords": ["medical", "medicine", "health", "disease", "treatment", "doctor", "patient", "symptom", "diagnosis", "healthcare", "anatomy", "physiology", "drug", "medical advice"]
+    }
+  },
+  
+  "_metadata": {
+    "version": "1.0.0",
+    "last_updated": "2025-01-01",
+    "description": "LoRA adapter configuration for Adaptive Minds",
+    "instructions": "Add new adapters to the 'adapters' object. Each adapter needs: path, description, system_prompt, and keywords (routing description is auto-generated from keywords)."
+  }
+}

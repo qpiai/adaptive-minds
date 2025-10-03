@@ -1,0 +1,202 @@
+# ============================================================================
+# Adaptive Minds - Models Configuration
+# ============================================================================
+# This file defines all models and LoRA adapters for your system.
+# Supports: HuggingFace repos, local paths, and custom configurations.
+#
+# Usage:
+#   python manage_models.py --sync     # Download/sync all models
+#   python manage_models.py --list     # List configured models
+#   python manage_models.py --rebuild  # Rebuild metadata.json
+# ============================================================================
+
+# Base Model Configuration
+base_model:
+  name: "llama-3.1-8B-instruct"
+  source: "huggingface"  # Options: huggingface, local, custom
+  huggingface_id: "meta-llama/Llama-3.1-8B-Instruct"
+  local_path: "./base_model/llama-3.1-8B-instruct"
+  # Alternative: Use local model
+  # source: "local"
+  # local_path: "/path/to/your/local/model"
+
+# LoRA Adapters Configuration
+# Each adapter can be from HuggingFace, local path, or trained by you
+lora_adapters:
+  
+  # Example 1: HuggingFace hosted LoRA
+  - name: "General"
+    source: "huggingface"
+    huggingface_id: "pavan01729/llama-8B-alpaca-2k"
+    local_path: "./loras/llama-8B-alpaca-2k"
+    description: "General purpose assistant for everyday conversations and casual chat"
+    system_prompt: "You are a helpful, knowledgeable assistant. Provide clear, detailed, and actionable responses. Give concrete examples, step-by-step instructions, and practical advice. Never mention links or URLs. Focus on delivering complete, useful information directly in your response."
+    keywords: 
+      - general
+      - chat
+      - conversation
+      - help
+      - question
+      - talk
+      - discuss
+      - explain
+      - tell me
+      - how are you
+      - hello
+      - hi
+      - greetings
+      - thanks
+      - please
+      - everyday questions
+    enabled: true
+  
+  - name: "Chemistry"
+    source: "huggingface"
+    huggingface_id: "pavan01729/llama-8B-chemistry"
+    local_path: "./loras/llama-8B-chemistry"
+    description: "Chemistry expert for compounds, reactions, and laboratory procedures"
+    system_prompt: "You are a chemistry expert. Provide detailed, accurate chemistry information with specific formulas, step-by-step reaction mechanisms, and practical procedures. Include safety information when relevant. Give complete, actionable answers without referring to external resources."
+    keywords:
+      - chemistry
+      - chemical
+      - molecule
+      - compound
+      - formula
+      - acid
+      - base
+      - element
+      - reaction
+      - periodic table
+      - organic
+      - inorganic
+      - laboratory
+      - safety
+      - chemical compounds
+      - molecular structures
+    enabled: true
+  
+  - name: "Finance"
+    source: "huggingface"
+    huggingface_id: "pavan01729/llama-8B-finance-alpaca"
+    local_path: "./loras/llama-8B-finance-alpaca"
+    description: "Finance expert for investments, banking, and economic topics"
+    system_prompt: "You are a finance expert. Provide detailed financial analysis, specific strategies, and actionable advice. Include concrete examples, calculations, and step-by-step guidance. Never mention external resources - deliver complete financial insights directly."
+    keywords:
+      - finance
+      - financial
+      - money
+      - investment
+      - stock
+      - bond
+      - trading
+      - banking
+      - loan
+      - interest
+      - economics
+      - budget
+      - cryptocurrency
+      - company
+      - business
+      - financial planning
+    enabled: true
+  
+  - name: "AI"
+    source: "huggingface"
+    huggingface_id: "pavan01729/llama-8B-gpt-ai"
+    local_path: "./loras/llama-8B-gpt-ai"
+    description: "AI and technology expert for machine learning and programming"
+    system_prompt: "You are an AI and machine learning expert. Provide detailed, practical code examples and step-by-step explanations. Always include actual working code when asked. Explain technical concepts clearly with concrete examples. Never suggest looking things up elsewhere - provide the complete answer directly."
+    keywords:
+      - AI
+      - artificial intelligence
+      - machine learning
+      - neural network
+      - algorithm
+      - programming
+      - model
+      - training
+      - deep learning
+      - NLP
+      - code
+      - python
+      - javascript
+      - technology
+      - reinforcement learning
+      - lora
+      - fine-tuning
+    enabled: true
+  
+  - name: "Medical"
+    source: "huggingface"
+    huggingface_id: "pavan01729/llama-8B-medical-alpaca"
+    local_path: "./loras/llama-8B-medical-alpaca"
+    description: "Medical expert for healthcare and health information"
+    system_prompt: "You are a medical knowledge expert. Provide detailed, evidence-based medical information with specific explanations about conditions, treatments, and procedures. Always include a disclaimer to consult healthcare professionals for personal medical advice. Give comprehensive answers without referring to external sources."
+    keywords:
+      - medical
+      - medicine
+      - health
+      - disease
+      - treatment
+      - doctor
+      - patient
+      - symptom
+      - diagnosis
+      - healthcare
+      - anatomy
+      - physiology
+      - drug
+      - medical advice
+    enabled: true
+
+  # Example 2: Local LoRA (trained by you)
+  # Uncomment and configure after training:
+  # - name: "YourCustomDomain"
+  #   source: "local"
+  #   local_path: "./loras/your-custom-lora"
+  #   description: "Your custom domain expert"
+  #   system_prompt: "You are an expert in..."
+  #   keywords:
+  #     - your
+  #     - domain
+  #     - keywords
+  #   enabled: true
+  
+  # Example 3: From a different HuggingFace user
+  # - name: "LegalExpert"
+  #   source: "huggingface"
+  #   huggingface_id: "someuser/legal-llama-lora"
+  #   local_path: "./loras/legal-expert"
+  #   description: "Legal expert for law-related questions"
+  #   system_prompt: "You are a legal expert..."
+  #   keywords:
+  #     - legal
+  #     - law
+  #     - contract
+  #   enabled: false  # Set to true when ready to use
+
+# Router Configuration
+router:
+  prompt_template: |
+    Analyze this user query and select the most appropriate domain expert to handle it.
+    
+    Query: "{query}"
+    
+    Available Domain Experts:
+    {domain_list}
+    
+    Instructions:
+    - Analyze the query carefully
+    - Consider the main topic and intent
+    - Choose the domain expert that best matches the query
+    - If unsure or the query is general/casual, choose General
+    - Respond with ONLY the domain name ({domain_names})
+    
+    Selected Domain:
+
+# Metadata
+metadata:
+  version: "1.1.0"
+  last_updated: "2025-10-03"
+  description: "LoRA adapter configuration for Adaptive Minds"
+  managed_by: "models_config.yaml - Use manage_models.py to modify"

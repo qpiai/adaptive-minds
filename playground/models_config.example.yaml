@@ -1,0 +1,71 @@
+# ============================================================================
+# Adaptive Minds - Example Configuration
+# ============================================================================
+# Copy this to models_config.yaml and customize for your needs
+# ============================================================================
+
+# Base Model Configuration
+base_model:
+  name: "llama-3.1-8B-instruct"
+  source: "huggingface"
+  huggingface_id: "meta-llama/Llama-3.1-8B-Instruct"
+  local_path: "./base_model/llama-3.1-8B-instruct"
+
+# LoRA Adapters Configuration
+lora_adapters:
+  
+  # Pre-trained General Assistant
+  - name: "General"
+    source: "huggingface"
+    huggingface_id: "pavan01729/llama-8B-alpaca-2k"
+    local_path: "./loras/llama-8B-alpaca-2k"
+    description: "General purpose assistant for everyday conversations"
+    system_prompt: "You are a helpful, knowledgeable assistant. Provide clear, detailed, and actionable responses."
+    keywords: [general, chat, conversation, help, question]
+    enabled: true
+  
+  # Example: Disabled adapter (won't be loaded)
+  - name: "DisabledExpert"
+    source: "huggingface"
+    huggingface_id: "someuser/disabled-lora"
+    local_path: "./loras/disabled-expert"
+    description: "This expert is disabled"
+    system_prompt: "You are a disabled expert"
+    keywords: [disabled, example]
+    enabled: false  # This won't be loaded
+  
+  # Example: Local LoRA (trained by you)
+  # Uncomment after training:
+  # - name: "MyCustomExpert"
+  #   source: "local"
+  #   local_path: "./loras/my-custom-expert"
+  #   description: "My custom trained expert"
+  #   system_prompt: "You are an expert in my domain"
+  #   keywords: [custom, domain, specific]
+  #   enabled: true
+
+# Router Configuration
+router:
+  prompt_template: |
+    Analyze this user query and select the most appropriate domain expert to handle it.
+    
+    Query: "{query}"
+    
+    Available Domain Experts:
+    {domain_list}
+    
+    Instructions:
+    - Analyze the query carefully
+    - Consider the main topic and intent
+    - Choose the domain expert that best matches the query
+    - If unsure or the query is general/casual, choose General
+    - Respond with ONLY the domain name ({domain_names})
+    
+    Selected Domain:
+
+# Metadata
+metadata:
+  version: "1.1.0"
+  last_updated: "2025-10-03"
+  description: "Example configuration for Adaptive Minds"
+  managed_by: "models_config.yaml - Use manage_models.py to modify"
