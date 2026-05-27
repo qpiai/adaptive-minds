@@ -8,7 +8,7 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/downloads/)
 [![tests](https://github.com/qpiai/adaptive-minds/actions/workflows/test.yml/badge.svg)](https://github.com/qpiai/adaptive-minds/actions/workflows/test.yml)
 [![HuggingFace adapters](https://img.shields.io/badge/🤗-adaptive--minds--loras-yellow)](https://huggingface.co/pavan01729/adaptive-minds-loras)
-[![Paper](https://img.shields.io/badge/paper-ICML_2026_(accepted)-b31b1b.svg)]()
+[![arXiv](https://img.shields.io/badge/arXiv-2510.15416-b31b1b.svg)](https://arxiv.org/abs/2510.15416)
 
 **One base model. Many LoRA experts. The model decides which one(s) to use.**
 
