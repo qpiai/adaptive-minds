@@ -127,6 +127,22 @@ def server(
         typer.secho("ERROR: install the [serve] extra: pip install '.[serve]'",
                     fg="red")
         raise typer.Exit(1)
+    # Fail fast with a friendly message if the chosen host:port is already
+    # bound — uvicorn's stock OSError is opaque, and 8765 in docker setups
+    # collides with the AM_SERVER_PORT override the user may have forgotten.
+    import socket
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    try:
+        s.bind((host if host != "0.0.0.0" else "127.0.0.1", port))
+    except OSError:
+        typer.secho(
+            f"ERROR: port {port} on {host} is already bound. "
+            f"Pass --port <N> or set AM_SERVER_PORT in .env (docker compose).",
+            fg="red")
+        raise typer.Exit(1)
+    finally:
+        s.close()
     # Set AM_CATALOG so the imported module configures itself on import
     # (covers the --reload case where uvicorn re-imports per file change).
     os.environ["AM_CATALOG"] = str(catalog)
