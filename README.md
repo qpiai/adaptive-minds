@@ -45,7 +45,8 @@
 | **Docker compose** | `docker compose up -d` brings up vLLM + server + UI. |
 | **Reproducible evals** | `evals/routing_table1.py` and `evals/mmlu_three_way.py` for paper Tables 1 and 3; shared SFT recipe in `training/` for Table 2. |
 | **151-query gold set** | Hand-labeled router benchmark ships in `evals/gold/routing_gold.jsonl`. |
-| **CI + tests** | 18 pytest cases, no GPU/network needed. Matrix on Python 3.10 / 3.11 / 3.12. |
+| **`nanoam.py`** | A self-contained 295-line reference impl. `cat nanoam.py` to grasp the whole framework in 5 minutes. |
+| **CI + tests** | 32 pytest cases, no GPU/network needed. Matrix on Python 3.10 / 3.11 / 3.12. |
 
 ## ⚡ Quickstart (Docker)
 
@@ -120,6 +121,8 @@ print(r["adapter_id"], "→", r["response"])
 
 ## 🏗 Architecture
 
+> **The shortest path to understanding**: read [`nanoam.py`](nanoam.py) (≤300 lines). It's the whole framework — catalog loader, vLLM client, router, agent loop, two tool handlers, `__main__` — in one file with stdlib + `requests` + `PyYAML`. The `adaptive_minds/` package is the same shape with FastAPI, sandboxed tools, evals, and Docker wrapped around it.
+
 ```
 ┌──────────────┐    ┌───────────────┐    ┌────────────────────────────┐
 │  Streamlit   │ ─▶ │  FastAPI      │ ─▶ │  vLLM (OpenAI /v1)         │
@@ -133,7 +136,7 @@ print(r["adapter_id"], "→", r["response"])
 
 - **Single source of truth**: one YAML catalog drives both the `vllm serve` launch command and the runtime's adapter selection.
 - **No model weights in the server**: `adaptive_minds.server` is fastapi + pydantic + requests. All inference is HTTP to vLLM.
-- **No LangGraph, no embedded UI**: the runtime is ~600 lines of Python.
+- **Small core**: ~1.4 k lines across nine `.py` files; every public function has a docstring that says *why* it exists.
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for a fuller walk-through.
 
@@ -188,16 +191,35 @@ adaptive-minds/
 
 These are intentionally out of v0.1 to keep the public surface minimal:
 
-- **Entropy H(Q) mode classifier** (paper §5.5) — auto-selects router vs agent based on the base model's first-16-token entropy
-- **SSE streaming** in the UI (server already structured for it)
-- **PEFT-backed in-process runtime** for single-GPU deployments
-- **Per-benchmark GRPO recipes** (legal / chemistry / quantum use GRPO stage-2 in the paper)
-- **Appendix C MCQ harness** — four-adapter reasoning-trace eval on Qwen3.5-9B
-- **Adapter-fusion experiments** (paper §3.3 contrast with LoRA Soups)
+- **Next.js chat UI** (replaces the current Streamlit `ui/`) — Tailwind + framer-motion + `@xyflow/react` for the router-decision visualisation.
+- **Entropy H(Q) mode classifier** (paper §5.5) — auto-selects router vs agent based on the base model's first-16-token entropy.
+- **SSE streaming** in the UI (server already structured for it).
+- **PEFT-backed in-process runtime** for single-GPU deployments.
+- **Per-benchmark GRPO recipes** (legal / chemistry / quantum use GRPO stage-2 in the paper).
+- **Appendix C MCQ harness** — four-adapter reasoning-trace eval on Qwen3.5-9B.
+- **Adapter-fusion experiments** (paper §3.3 contrast with LoRA Soups).
 
 ## 🤝 Contributing
 
 PRs welcome — see [`CONTRIBUTING.md`](CONTRIBUTING.md) for setup, testing, and what we will / won't merge.
+
+## 📚 Citation
+
+If you use this work, please cite the paper:
+
+> Shekar, P. & Krishnan, N. *Adaptive Minds: Empowering Agents with LoRA-as-Tools*. arXiv:[2510.15416](https://arxiv.org/abs/2510.15416), Oct 2025.
+
+```bibtex
+@misc{shekar2025adaptiveminds,
+  title  = {Adaptive Minds: Empowering Agents with {LoRA}-as-Tools},
+  author = {Shekar, Pavan and Krishnan, Niranjan},
+  year   = {2025},
+  eprint = {2510.15416},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CL},
+  url    = {https://arxiv.org/abs/2510.15416}
+}
+```
 
 ## 📄 License
 
