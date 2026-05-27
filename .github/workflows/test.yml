@@ -1,0 +1,43 @@
+name: tests
+
+on:
+  push:
+    branches: [main, "release/**"]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    name: pytest · py${{ matrix.python }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install package
+        run: pip install -e ".[dev,serve]"
+
+      - name: Lint (ruff)
+        run: ruff check adaptive_minds tests
+
+      - name: Pytest
+        run: pytest tests/ -v
+
+      - name: Smoke import
+        run: |
+          python -c "from adaptive_minds.server import app; print('server:', app.title, app.version)"
+          python -c "from adaptive_minds import run_router, run_agent, load_catalog; print('runtime ok')"

@@ -1,0 +1,31 @@
+# Adaptive Minds — FastAPI server container.
+# Thin: no torch / no transformers / no vLLM. Inference is proxied to the
+# `vllm` service via VLLM_BASE.
+
+FROM python:3.11-slim
+
+LABEL org.opencontainers.image.title="adaptive-minds-server"
+LABEL org.opencontainers.image.source="https://github.com/qpiai/adaptive-minds"
+
+ENV PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    AM_CATALOG=/app/catalogs/qwen25_smoke.yaml
+
+WORKDIR /app
+
+# Install dependencies first so the layer caches between code edits.
+COPY pyproject.toml README.md LICENSE ./
+COPY adaptive_minds ./adaptive_minds
+RUN pip install --no-cache-dir -e ".[serve,tools]"
+
+# Copy catalogs + the package source (already done above for installs).
+COPY catalogs ./catalogs
+
+EXPOSE 8765
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8765/health', timeout=3)" || exit 1
+
+CMD ["python", "-m", "adaptive_minds.cli", "server", \
+     "--catalog", "/app/catalogs/qwen25_smoke.yaml", \
+     "--host", "0.0.0.0", "--port", "8765"]

@@ -1,0 +1,29 @@
+# Adaptive Minds — Streamlit UI container.
+# Talks to the `server` service via AM_API_BASE.
+
+FROM python:3.11-slim
+
+LABEL org.opencontainers.image.title="adaptive-minds-ui"
+LABEL org.opencontainers.image.source="https://github.com/qpiai/adaptive-minds"
+
+ENV PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /app
+
+COPY pyproject.toml README.md LICENSE ./
+COPY adaptive_minds ./adaptive_minds
+RUN pip install --no-cache-dir -e ".[ui]"
+
+COPY ui ./ui
+
+EXPOSE 8501
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health', timeout=3)" || exit 1
+
+CMD ["streamlit", "run", "ui/app.py", \
+     "--server.address", "0.0.0.0", \
+     "--server.port", "8501", \
+     "--server.headless", "true", \
+     "--browser.gatherUsageStats", "false"]

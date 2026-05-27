@@ -1,639 +1,204 @@
+<div align="center">
+
 # 🧠 Adaptive Minds
 
-**Intelligent multi-agent AI system that dynamically selects specialized domain experts for your queries**
+### LoRA adapters as callable tools for agent orchestration
 
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Models-yellow)](https://huggingface.co/collections/pavan01729/adaptive-minds-68cbab3565664604be49a462)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/downloads/)
+[![tests](https://github.com/qpiai/adaptive-minds/actions/workflows/test.yml/badge.svg)](https://github.com/qpiai/adaptive-minds/actions/workflows/test.yml)
+[![HuggingFace adapters](https://img.shields.io/badge/🤗-adaptive--minds--loras-yellow)](https://huggingface.co/pavan01729/adaptive-minds-loras)
+[![Paper](https://img.shields.io/badge/paper-ICML_2026_(accepted)-b31b1b.svg)]()
 
-Adaptive Minds transforms LoRA adapters into **specialized tools** for AI agents. Instead of using a single general-purpose model, it employs an intelligent router that automatically selects the most appropriate LoRA adapter for each query, effectively giving the AI agent access to domain-specific expertise on demand.
+**One base model. Many LoRA experts. The model decides which one(s) to use.**
 
-![Adaptive Minds Demo](./assets/adaptive_minds_v2_lite.gif)
+[Quickstart](#-quickstart-docker) · [Try it](#-try-it) · [Reproduce paper results](#-reproducing-paper-results) · [Architecture](docs/ARCHITECTURE.md) · [Contributing](CONTRIBUTING.md)
 
-## ✨ Key Features
-
-- 🎯 **Intelligent Routing**: AI automatically selects the best domain expert for each query
-- 🧠 **5 Domain Experts**: Chemistry, Finance, AI, Medical, and General knowledge
-- 🔄 **Multi-Agent Architecture**: Built with LangGraph for robust workflow management
-- 🔧 **Fully Configurable**: YAML-based configuration, no code changes needed
-- 🚀 **Two Deployment Modes**: 
-  - **Docker** - One-command deployment with pre-configured experts
-  - **Playground** - Train, customize, and deploy your own experts
-- 💬 **Dual Interface**: FastAPI backend + Streamlit web UI
-- 📊 **Transparent Reasoning**: See why each expert was selected
-- 🔗 **Conversation Memory**: Context-aware responses across interactions
-
-## 🏗️ How It Works
-
-```mermaid
-graph LR
-    A[User Query] --> B[AI Router Agent]
-    B --> C{Domain Analysis}
-    C --> D[Chemistry Expert]
-    C --> E[Finance Expert]
-    C --> F[AI Expert]
-    C --> G[Medical Expert]
-    C --> H[General Expert]
-    D --> I[Specialized Response]
-    E --> I
-    F --> I
-    G --> I
-    H --> I
-```
-
-1. **User sends a query** via API or web interface
-2. **AI Router Agent** analyzes the query using the base Llama 3.1 model
-3. **Domain selection** happens through semantic understanding
-4. **Expert Agent** generates response using the selected domain-specific LoRA adapter
-5. **Response delivered** with reasoning about why that expert was chosen
+</div>
 
 ---
 
-## 🚀 Quick Start (Docker)
+> 📺 **Demo**
 
-**Get up and running in 5 minutes with pre-configured experts.**
+![Adaptive Minds UI](docs/screenshot.png)
 
-### Prerequisites
-- Docker & Docker Compose
-- NVIDIA GPU with 8GB+ VRAM
-- HuggingFace account (for Llama 3.1 access)
+<sub><i>(Screenshot captured from the bundled Streamlit UI talking to a 2-adapter docker-compose stack. Replace with your own after running `docker compose up -d`.)</i></sub>
 
-### 1. Get HuggingFace Access
+---
 
-**Required:** You need access to Meta's Llama 3.1 model on HuggingFace.
+## ✨ Why Adaptive Minds
 
-1. **Create a HuggingFace account** at [huggingface.co](https://huggingface.co)
+- **🎯 Specialization, not parameter merging.** Instead of merging LoRAs into a single weight blend, each adapter stays a named, callable tool. The base model picks the right one for the query at inference time.
+- **🤖 Two modes, one runtime.** Single-step **Router** for direct domain queries, multi-step **ReAct Agent** for tasks that need multiple experts or external tools (calculator, code, shell, web, LP solver).
+- **📦 Built on standards.** vLLM serves the base model + adapters by name via its native `--lora-modules`; the runtime is pure Python over the OpenAI-compatible endpoint. No bespoke serving stack.
 
-2. **Accept the Llama 3.1 license:**
-   - Visit: https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct
-   - Click "Accept" on the license agreement
-   - Wait for approval (usually instant)
+## 🚀 Features
 
-3. **Get your access token:**
-   - Go to: https://huggingface.co/settings/tokens
-   - Create a new token with "Read" permissions
-   
-   **💡 Recommended:** Create a `.env` file for persistent storage:
-   ```bash
-   # Create .env file in project root
-   cat > .env << EOF
-   HF_TOKEN=your_actual_token_here
-   EOF
-   ```
-   
-   **Alternative:** Copy and edit the example template:
-   ```bash
-   cp .env.example .env
-   nano .env  # Edit with your actual token
-   ```
-   
-   ⚠️ **Security Note:** The `.env` file is already in `.gitignore` - never commit tokens to version control!
+| | |
+|---|---|
+| **Router mode** | Single base-model call picks the right adapter from the catalog. **98.3%** routing accuracy on a 30-adapter library (paper Table 1). |
+| **Agent mode** | ReAct loop with `THOUGHT / CALL / OBSERVATION / FINAL` grammar. CALLs can be adapters *or* external tools. Multi-CALL planning per turn. |
+| **5 external tools** | `calculator` (sympy), `code` (Python sandbox), `shell` (bash sandbox), `websearch` (DDG), `pulp` (LP solver). Plug in your own with one function. |
+| **30 LoRA specialists** | SQL, Cypher, SPARQL, bash, Mermaid, PII, quantum, legal, chem + 21 domain experts. All on the HF Hub; one YAML adds your own. |
+| **FastAPI server** | `/health`, `/adapters`, `/route`, `/agent`, `/chat`. Pydantic-validated, CORS-open, no torch/transformers in the server layer. |
+| **Streamlit UI** | Chat-style, mode toggle, adapter list, trace expander. Talks to the FastAPI server. |
+| **Docker compose** | `docker compose up -d` brings up vLLM + server + UI. |
+| **Reproducible evals** | `evals/routing_table1.py` and `evals/mmlu_three_way.py` for paper Tables 1 and 3; shared SFT recipe in `training/` for Table 2. |
+| **151-query gold set** | Hand-labeled router benchmark ships in `evals/gold/routing_gold.jsonl`. |
+| **CI + tests** | 18 pytest cases, no GPU/network needed. Matrix on Python 3.10 / 3.11 / 3.12. |
 
-4. **Verify access:**
-   ```bash
-   # Test your token works
-   curl -H "Authorization: Bearer $HF_TOKEN" \
-        https://huggingface.co/api/models/meta-llama/Llama-3.1-8B-Instruct
-   ```
-
-### 2. Start the System
+## ⚡ Quickstart (Docker)
 
 ```bash
-git clone https://github.com/qpiai/adaptive-minds.git
+git clone https://github.com/qpiai/adaptive-minds
 cd adaptive-minds
-
-# Create .env file with your HF token (if not done already)
-echo "HF_TOKEN=your_actual_token_here" > .env
-
-# Start the system (first run downloads ~16GB of models)
-docker compose up
+cp .env.example .env             # then fill in HF_TOKEN
+docker compose up -d
 ```
 
-**🕐 First Run:** Initial startup takes ~15-20 minutes to download models. Watch for "🎉 ALL SYSTEMS READY!" message.
+Wait for vLLM to download the base model + 2 smoke adapters (~5–15 min first time, watch `docker compose logs -f vllm`), then open **http://localhost:8501**.
 
-The system will:
-- Download base model and 5 LoRA adapters from HuggingFace
-- Start FastAPI server (port 8765)
-- Start Streamlit UI (port 8501)
-
-### 3. Access the System
-
-**Web Interface:**
-- Open http://localhost:8501 for the Streamlit UI
-
-**API Interface:**
-```bash
-# Send a query
-curl -X POST http://localhost:8765/chat \
-  -H "Content-Type: application/json" \
-  -d '{"query": "What is the molecular formula of caffeine?"}'
-
-# Check system status
-curl http://localhost:8765/status
-```
-
-**📚 See [QUICKSTART.md](QUICKSTART.md) for detailed Docker deployment guide**
-
----
-
-## 🧪 Development Mode (Playground)
-
-**For training custom experts and advanced configuration.**
-
-The `playground/` directory provides a complete development environment where you can:
-- Train custom LoRA experts on any HuggingFace dataset
-- Mix pre-trained and custom models
-- Configure routing behavior dynamically
-- Test and validate your setup
-
-### Setup
+To run the full 30-adapter catalog instead of the 2-adapter smoke setup, edit `docker-compose.yml`'s `vllm` `--lora-modules` to match `catalogs/qwen25_30.yaml` and set `AM_CATALOG=/app/catalogs/qwen25_30.yaml` in `.env`. The helper
 
 ```bash
-# Install dependencies
-uv sync
-
-# Or with training capabilities
-uv sync --extra training
-
-# Activate environment
-source .venv/bin/activate
-cd playground
+adaptive-minds serve --catalog catalogs/qwen25_30.yaml
 ```
 
-### Configuration
+prints the exact `vllm serve` line you need.
 
-Edit `playground/models_config.yaml` to configure your experts:
-
-```yaml
-# Add any HuggingFace model
-lora_adapters:
-  - name: "MyExpert"
-    source: "huggingface"
-    huggingface_id: "username/model-name"
-    local_path: "./loras/my-expert"
-    description: "Expert in my domain"
-    system_prompt: "You are an expert in..."
-    keywords: [domain, specific, keywords]
-    enabled: true
-
-  # Or use local models
-  - name: "CustomExpert"
-    source: "local"
-    local_path: "./loras/custom-expert"
-    description: "My custom trained expert"
-    system_prompt: "You are an expert in..."
-    keywords: [custom, domain, specific]
-    enabled: true
-```
-
-### Model Management
+## 🐍 Quickstart (pip, against an existing vLLM)
 
 ```bash
-# List configured models
-python manage_models.py list
+pip install -e ".[serve,ui,tools]"
+export VLLM_BASE=http://your-vllm-host:8000/v1
 
-# Download/sync all models
-python manage_models.py sync
+# 1. Start the FastAPI server
+adaptive-minds server --catalog catalogs/qwen25_30.yaml &
 
-# Validate configuration
-python manage_models.py validate
+# 2. (Optional) launch the Streamlit UI
+adaptive-minds ui &
 
-# Rebuild metadata from config
-python manage_models.py rebuild
+# 3. Or use the CLI directly:
+adaptive-minds route --catalog catalogs/qwen25_30.yaml \
+    --query "Write a SQL query for top 10 customers by revenue in 2023."
+
+adaptive-minds agent --catalog catalogs/qwen25_30.yaml \
+    --query "Compute 2**32+17, then explain the figure in finance terms."
 ```
 
-### Train and Add New LoRAs (End-to-End)
+## 🧪 Try it
 
-Follow these exact steps from the `playground/` directory to train, register, and serve a new expert:
+**Via curl:**
 
 ```bash
-# 0) Prep environment (run once)
-uv sync --extra training
-source .venv/bin/activate
-cd playground
+curl -s :8765/health | jq .
+curl -s :8765/adapters | jq 'map(.id)'
 
-# 1) Configure and download models (base + any enabled LoRAs)
-export HF_TOKEN="your_huggingface_token_here"   # if using gated HF models
-python manage_models.py sync
+curl -s :8765/route \
+  -H 'Content-Type: application/json' \
+  -d '{"query": "Write SQL to find top 5 customers by revenue."}' \
+  | jq '.adapter_id, .response'
 
-# 2) Train a new LoRA on any HuggingFace dataset
-python train/train.py \
-  --dataset "medalpaca/medical_meadow_medical_flashcards" \
-  --lora-name "medical-expert" \
-  --steps 500
-
-# 3) Register the trained LoRA into the config
-python manage_models.py add-lora \
-  --name "MedicalExpert" \
-  --path "./loras/medical-expert" \
-  --description "Medical domain expert" \
-  --system-prompt "You are a medical expert. Provide detailed, evidence-based answers with a brief disclaimer to consult professionals for personal care." \
-  --keywords medical health diagnosis treatment
-
-# 4) Rebuild metadata.json used by the server
-python manage_models.py rebuild
-
-# 5) (Optional) Validate and list
-python manage_models.py validate
-python manage_models.py list
-
-# 6) Start the dev server
-python server.py
-
-# 7) Test via API
-curl -X POST http://localhost:8765/chat \
-  -H "Content-Type: application/json" \
-  -d '{"query": "What are common flu symptoms?"}'
+curl -s :8765/agent \
+  -H 'Content-Type: application/json' \
+  -d '{"query": "Compute 2**16+17, then explain it as a finance metric."}' \
+  | jq -r .response
 ```
 
-### Start Development Server
+**Via Python:**
 
-```bash
-# Start server
-python server.py
+```python
+from adaptive_minds import load_catalog, run_router, run_agent
+from adaptive_minds.catalog import router_cfg
 
-# Or with frontend (in another terminal)
-streamlit run app_frontend.py
+cat = load_catalog("catalogs/qwen25_30.yaml")
+cfg = router_cfg("catalogs/qwen25_30.yaml")
+
+r = run_router("How do you optimize a SPARQL query?", cat, cfg, 0.3, 256)
+print(r["adapter_id"], "→", r["response"])
 ```
 
-**📚 See [playground/README.md](playground/README.md) for complete development documentation**
+## 🏗 Architecture
 
----
-
-## 🎯 Examples & Usage
-
-### 📚 Ready-to-Run Examples
-
-We've included several examples to help you get started:
-
-```bash
-# 🐍 Python API examples
-python examples/basic_usage.py
-
-# 💬 Interactive chat demo
-python examples/interactive_demo.py
-
-# 🌐 cURL examples
-./examples/curl_examples.sh
+```
+┌──────────────┐    ┌───────────────┐    ┌────────────────────────────┐
+│  Streamlit   │ ─▶ │  FastAPI      │ ─▶ │  vLLM (OpenAI /v1)         │
+│  ui/app.py   │    │  /chat /route │    │  base model                │
+│              │    │  /agent       │    │  + LoRA adapters by name   │
+└──────────────┘    └───────────────┘    └────────────────────────────┘
+                            │
+                            ├─ run_router  ── single-step semantic routing (paper §5.2)
+                            └─ run_agent   ── ReAct loop with adapters+tools (paper §5.4)
 ```
 
-See the [`examples/`](examples/) directory for detailed usage examples and documentation.
+- **Single source of truth**: one YAML catalog drives both the `vllm serve` launch command and the runtime's adapter selection.
+- **No model weights in the server**: `adaptive_minds.server` is fastapi + pydantic + requests. All inference is HTTP to vLLM.
+- **No LangGraph, no embedded UI**: the runtime is ~600 lines of Python.
 
-### 🎯 Example Queries
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for a fuller walk-through.
 
-| Query | Selected Expert | Why |
-|-------|----------------|-----|
-| "What is the molecular formula of water?" | **Chemistry** | Chemical compound question |
-| "How does compound interest work?" | **Finance** | Financial concept |
-| "Explain machine learning" | **AI** | Technology topic |
-| "What are symptoms of flu?" | **Medical** | Health-related question |
-| "Hello, how are you?" | **General** | Casual conversation |
+## 📊 Reproducing paper results
 
----
+| Paper       | Command                                                                              |
+|-------------|--------------------------------------------------------------------------------------|
+| **Table 1** | `python -m evals.routing_table1 --catalog catalogs/qwen25_30.yaml`                   |
+| **Table 1** (keyword baseline) | `python -m evals.routing_keyword_baseline --catalog catalogs/qwen25_30.yaml` |
+| **Table 2** | See [`training/README.md`](training/README.md) — shared SFT recipe + benchmark map   |
+| **Table 3** | `python -m evals.mmlu_three_way --catalog catalogs/qwen25_30.yaml --n 10`            |
 
-## 📁 Project Structure
+Full details in [`evals/README.md`](evals/README.md).
+
+## 🧰 Bring your own adapter
+
+1. Train a LoRA with the shared recipe (or use any existing PEFT LoRA on the catalog's base model):
+   ```bash
+   python training/train_sft.py \
+       --dataset hf://your-org/your-dataset \
+       --base-model Qwen/Qwen2.5-7B-Instruct \
+       --lora-name qwen25_my_expert_v1
+   ```
+2. Push to the Hub (or any HF-compatible repo), then add an entry to `catalogs/qwen25_30.yaml`:
+   ```yaml
+   - name: MyExpert
+     hf_subdir: qwen2.5-7b/qwen25_my_expert_v1
+     description: One sentence the router will see.
+     system_prompt: You are an expert in …
+     keywords: [topic, related, terms]
+     enabled: true
+   ```
+3. Restart vLLM + server. The new adapter is routable.
+
+## 🗂 Project layout
 
 ```
 adaptive-minds/
-├── build/                      # Docker quick-start (production)
-│   ├── server.py              # FastAPI backend
-│   ├── metadata.json          # Expert configuration
-│   ├── download_models.py     # Model downloader
-│   ├── app_frontend.py        # Streamlit web UI
-│   └── requirements.txt       # Python dependencies
-│
-├── playground/                 # Development environment
-│   ├── models_config.yaml     # Main configuration (edit this!)
-│   ├── manage_models.py       # Model management CLI
-│   ├── server.py              # Dev server
-│   ├── app_frontend.py        # Streamlit UI
-│   ├── train/                 # Training scripts
-│   │   ├── train.py          # LoRA training
-│   │   └── README.md         # Training guide
-│   └── README.md              # Playground documentation
-│
-├── examples/                   # Usage examples
-│   ├── basic_usage.py         # Python API examples
-│   ├── interactive_demo.py    # Interactive chat demo
-│   ├── curl_examples.sh       # cURL examples
-│   └── README.md             # Examples documentation
-│
-├── docker-compose.yml         # Docker deployment
-├── Dockerfile                 # Container definition
-├── README.md                  # This file
-├── QUICKSTART.md             # Docker quick start guide
-├── ADDING_NEW_LORAS.md       # Training & customization guide
-└── CONTRIBUTING.md           # Contribution guidelines
+├── adaptive_minds/      # runtime: router, agent, tools, catalog, server, CLI
+├── ui/                  # Streamlit chat UI
+├── catalogs/            # YAML adapter catalogs (30-adapter + 2-adapter smoke)
+├── evals/               # paper-table reproduction scripts + 151-query gold set
+├── training/            # shared SFT recipe + per-benchmark mapping
+├── examples/            # python + curl quickstart scripts
+├── docker/              # Dockerfile.server, Dockerfile.ui
+├── docs/                # ARCHITECTURE.md + screenshots
+├── tests/               # pytest, no GPU/network needed
+└── docker-compose.yml   # vllm + server + ui
 ```
 
----
+## 🗺 Roadmap
 
-## 📊 Models & Architecture
+These are intentionally out of v0.1 to keep the public surface minimal:
 
-### Base Model
-[**meta-llama/Llama-3.1-8B-Instruct**](https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct)
-- Used by the Router Agent for domain selection
-- Requires HuggingFace authentication
-
-### LoRA Adapters
-🔗 [**View Complete Collection on HuggingFace**](https://huggingface.co/collections/pavan01729/adaptive-minds-68cbab3565664604be49a462)
-
-| Expert | Model ID | Domain | Keywords |
-|--------|----------|--------|----------|
-| **General** | `pavan01729/llama-8B-alpaca-2k` | Everyday conversation | chat, help, question |
-| **Chemistry** | `pavan01729/llama-8B-chemistry` | Compounds & reactions | chemistry, molecule, reaction |
-| **Finance** | `pavan01729/llama-8B-finance-alpaca` | Investments & economics | finance, investment, stock |
-| **AI** | `pavan01729/llama-8B-gpt-ai` | Tech & programming | AI, programming, neural network, LoRA |
-| **Medical** | `pavan01729/llama-8B-medical-alpaca` | Healthcare & medicine | medical, health, diagnosis |
-
-> 💡 **Training Note**: All LoRA adapters were fine-tuned using [QpiAI Pro](https://www.qpiai-pro.tech/), a no-code platform that simplifies LLM fine-tuning and deployment. This made it easy to create domain-specific adapters without complex coding - perfect for researchers and developers looking to build their own specialized models.
-
----
-
-## 📡 API Reference
-
-### POST /chat
-Send a query to the system.
-
-**Request:**
-```json
-{
-  "query": "What is photosynthesis?"
-}
-```
-
-**Response:**
-```json
-{
-  "response": "Photosynthesis is the process by which plants convert light energy...",
-  "selected_adapter": "Chemistry",
-  "reasoning": "🔍 Query: 'What is photosynthesis?'\n🤖 AI Selection: Chemistry\n✅ Decision: Chemistry via AI semantic analysis"
-}
-```
-
-### GET /status
-Get system status and loaded models.
-
-**Response:**
-```json
-{
-  "is_initialized": true,
-  "loaded_adapters": ["General", "Chemistry", "Finance", "AI", "Medical"],
-  "gpu_memory_allocated": 15.2,
-  "gpu_memory_reserved": 16.0
-}
-```
-
-### GET /available_experts
-List all available domain experts.
-
-### DELETE /chat/history
-Clear conversation history.
-
----
-
-## 🎯 Use Cases
-
-### Domain-Specific Chatbots
-Build specialized assistants for:
-- Customer support (product-specific)
-- Technical documentation
-- Healthcare information
-- Financial advice
-- Educational tutoring
-
-### Research Assistants
-Create experts for:
-- Scientific literature review
-- Legal document analysis
-- Market research
-- Code generation and debugging
-- Data analysis
-
-### Multi-Domain Systems
-Combine multiple experts for:
-- Enterprise knowledge bases
-- Multi-specialty consulting
-- Educational platforms
-- Professional services
-
----
-
-## 🔧 Configuration
-
-### Dynamic Configuration
-All configuration is managed through `playground/models_config.yaml` - no code changes needed!
-
-### Router Behavior
-Configure how the AI router selects experts:
-
-```yaml
-router:
-  prompt_template: |
-    Analyze this user query and select the most appropriate domain expert.
-    
-    Query: "{query}"
-    Available Domain Experts: {domain_list}
-    
-    Instructions:
-    - Analyze the query carefully
-    - Consider the main topic and intent
-    - Choose the domain expert that best matches the query
-    - If unsure, choose General
-    
-    Selected Domain:
-```
-
-### Expert Configuration
-Each expert needs:
-- **name**: Unique identifier
-- **source**: `huggingface` or `local`
-- **huggingface_id**: Model ID on HuggingFace (if source is huggingface)
-- **local_path**: Model location
-- **description**: What this expert handles
-- **system_prompt**: Expert's persona and instructions
-- **keywords**: For routing (auto-generates descriptions)
-- **enabled**: Toggle on/off without deleting
-
-### Generation Parameters
-Customize response quality in `server.py`:
-
-```python
-outputs = model.generate(
-    max_new_tokens=512,      # Response length
-    temperature=0.8,         # Creativity (0.0-1.0)
-    top_p=0.92,             # Nucleus sampling
-    top_k=50,               # Vocabulary filtering
-    repetition_penalty=1.15, # Reduce repetition
-    no_repeat_ngram_size=3  # Prevent phrase repetition
-)
-```
-
----
-
-## 🔧 Adding Your Own Domain Experts
-
-Want to add your own specialized LoRA adapters? It's easy! 
-
-### Quick Start
-```bash
-# 1. Train your adapter
-cd playground/train
-python train.py --dataset your-dataset --lora-name your-domain
-
-# 2. Register it
-cd ..
-python manage_models.py add-lora \
-  --name "YourExpert" \
-  --path "./loras/your-domain" \
-  --description "Expert in your domain" \
-  --system-prompt "You are an expert in..." \
-  --keywords your domain keywords
-
-# 3. Deploy
-python manage_models.py rebuild
-python server.py
-```
-
-**📖 See the complete guide:** [ADDING_NEW_LORAS.md](ADDING_NEW_LORAS.md)
-
-This covers:
-- Training custom LoRA adapters
-- Choosing and preparing datasets
-- Integration steps
-- Testing and troubleshooting
-- Multiple real-world examples
-
----
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-**"Access denied" when downloading models:**
-- Ensure `HF_TOKEN` is set correctly in `.env`
-- Accept the Llama 3.1 license at https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct
-- Verify token has read permissions
-
-**Server fails to start:**
-- Check GPU availability: `nvidia-smi`
-- Ensure Docker has GPU access
-- Verify sufficient GPU memory (8GB+ recommended)
-
-**CUDA out of memory:**
-```bash
-# Reduce batch size or use smaller models
-# Or run on CPU (slower)
-CUDA_VISIBLE_DEVICES="" python server.py
-```
-
-**Models download slowly:**
-- First run downloads ~16GB of models
-- Use a stable internet connection
-- Models are cached for subsequent runs
-
-**Port already in use:**
-```bash
-# Kill existing process
-lsof -ti:8765 | xargs kill -9
-
-# Or change port in server.py or docker-compose.yml
-```
-
-### System Requirements
-
-**Minimum:**
-- NVIDIA GPU with 8GB+ VRAM
-- 16GB system RAM
-- 20GB free disk space
-- Ubuntu 20.04+
-
-**Recommended:**
-- NVIDIA GPU with 16GB+ VRAM (RTX 3090, A5000, etc.)
-- 32GB+ system RAM
-- 50GB+ SSD space
-- Ubuntu 22.04
-
----
+- **Entropy H(Q) mode classifier** (paper §5.5) — auto-selects router vs agent based on the base model's first-16-token entropy
+- **SSE streaming** in the UI (server already structured for it)
+- **PEFT-backed in-process runtime** for single-GPU deployments
+- **Per-benchmark GRPO recipes** (legal / chemistry / quantum use GRPO stage-2 in the paper)
+- **Appendix C MCQ harness** — four-adapter reasoning-trace eval on Qwen3.5-9B
+- **Adapter-fusion experiments** (paper §3.3 contrast with LoRA Soups)
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+PRs welcome — see [`CONTRIBUTING.md`](CONTRIBUTING.md) for setup, testing, and what we will / won't merge.
 
-### Quick Contribution Guide
+## 📄 License
 
-1. **Fork the repository**
-2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
-3. **Make your changes**
-4. **Test thoroughly**: `cd playground && python test_workflow.py`
-5. **Commit**: `git commit -m 'Add amazing feature'`
-6. **Push**: `git push origin feature/amazing-feature`
-7. **Open a Pull Request**
-
-### Areas for Contribution
-- 🧠 Additional domain-specific adapters and training datasets
-- 🔧 Router improvements and alternative algorithms
-- 📚 Documentation, tutorials, and examples
-- 🐛 Bug fixes and performance optimizations
-- 🎨 UI/UX improvements
-- 🧪 Testing and benchmarks
-
----
-
-## 📖 Documentation
-
-- **[Quick Start Guide](QUICKSTART.md)** - 5-minute Docker deployment
-- **[Development Guide](playground/README.md)** - Training & customization
-- **[Adding New LoRAs](ADDING_NEW_LORAS.md)** - Step-by-step training guide
-- **[Contributing](CONTRIBUTING.md)** - Contribution guidelines
-- **[Examples](examples/README.md)** - Usage examples
-
----
-
-## 📊 Performance
-
-- **Response Time**: ~2-5 seconds per query (depending on complexity)
-- **Memory Usage**: ~15-20GB GPU VRAM for full system
-- **Throughput**: Handles concurrent requests via FastAPI
-- **Accuracy**: AI routing achieves >90% domain selection accuracy
-- **Training Time**: ~30 minutes per LoRA on single GPU
-
----
-
-## 📜 License
-
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 🙏 Acknowledgments
-
-- **Meta** - Llama 3.1 base model
-- **HuggingFace** - Model hosting and transformers library
-- **LangGraph** - Multi-agent workflow framework
-- **Unsloth** - Fast and efficient LoRA training
-- **PEFT** - Parameter-efficient fine-tuning
-- **Community** - Datasets, feedback, and contributions
-
----
-
-## 📬 Contact & Support
-
-- **Issues**: [GitHub Issues](https://github.com/qpiai/adaptive-minds/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/qpiai/adaptive-minds/discussions)
-- **HuggingFace**: [Model Collection](https://huggingface.co/collections/pavan01729/adaptive-minds-68cbab3565664604be49a462)
-
-
-
-<!-- ## ⭐ Star History
-
-If you find this project useful, please consider giving it a star!
-
-[![Star History Chart](https://api.star-history.com/svg?repos=qpiai/adaptive-minds&type=Date)](https://star-history.com/#qpiai/adaptive-minds&Date) -->
-
----
-
-**Star ⭐ this repository if you find it useful!**
-
-**Built with ❤️ for the open source community**
+Apache 2.0. See [`LICENSE`](LICENSE).

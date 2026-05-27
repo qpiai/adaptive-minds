@@ -1,0 +1,45 @@
+# 2-adapter smoke catalog — for `docker compose up -d` smoke tests.
+# Pulls only Qwen2.5-7B-Instruct + 2 LoRAs (~1 GB extra), instead of the
+# full 30-adapter library (~6 GB).
+
+base_model:
+  hf_id: Qwen/Qwen2.5-7B-Instruct
+  max_lora_rank: 64
+
+hub:
+  repo: pavan01729/adaptive-minds-loras
+
+router:
+  prompt_template: |
+    Analyze the user query below and select the single best domain expert
+    from the list. Respond with ONLY the expert's id (lowercase, no
+    punctuation).
+
+    Query: "{query}"
+
+    Experts:
+    {domain_list}
+
+    Selected expert:
+  temperature: 0.0
+  max_tokens: 16
+
+agent:
+  brain: base
+  max_steps: 4
+  max_tokens: 1024
+
+lora_adapters:
+  - name: Chemistry
+    hf_subdir: qwen2.5-7b/qwen25_chem_v1_grpo
+    description: Chemistry expert — compounds, reactions, ChEMBL canonical SMILES.
+    system_prompt: You are a chemistry expert. Give precise, mechanism-grounded answers.
+    keywords: [chemistry, molecule, reaction, compound, smiles, formula]
+    enabled: true
+
+  - name: SQL
+    hf_subdir: qwen2.5-7b/qwen25_sql_v1
+    description: Translate natural-language questions into SQL queries (Spider domain).
+    system_prompt: You write correct, executable SQL. Use the schema provided.
+    keywords: [sql, query, select, join, where, group by, spider, schema]
+    enabled: true

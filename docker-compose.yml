@@ -1,20 +1,61 @@
+# Adaptive Minds — full stack via Docker Compose.
+#
+# Quickstart:
+#   1. Copy .env.example → .env and fill in HF_TOKEN.
+#   2. docker compose up -d
+#   3. Open http://localhost:8501 (or $AM_UI_PORT) once
+#      `docker compose logs vllm` shows "Application startup complete."
+#      Cold start is ~5–15 min the first time (downloads Qwen2.5-7B
+#      + the 2 smoke adapters into a Docker volume).
+#
+# How LoRAs are loaded:
+#   `prefetch` runs first, downloading the adapters listed in
+#   $AM_LORA_SUBDIRS into the `lora-cache` volume. Then `vllm` boots with
+#   --lora-modules pointing at those local paths. The download is cached
+#   in the named volume so subsequent `up` calls are instant.
+#
+# To swap to the full 30-adapter catalog: extend AM_LORA_SUBDIRS in .env
+# and add matching `--lora-modules <name>=/loras/<subdir>` entries below.
+# The helper `adaptive-minds serve --catalog <yaml>` prints exactly the
+# command line.
+#
+# To skip vLLM (e.g. point at a remote vLLM endpoint):
+#   docker compose up server ui
+#   # ensure VLLM_BASE in .env points at the remote endpoint.
+
 services:
-  adaptive-lora:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: adaptive-minds-server
-    gpus: all
+  prefetch:
+    image: python:3.11-slim
+    container_name: am-prefetch
     environment:
-      - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
-      - HF_TOKEN=${HF_TOKEN}
+      HF_TOKEN: ${HF_TOKEN:-}
+      HF_HUB_ENABLE_HF_TRANSFER: "1"
+      LORA_REPO: ${AM_LORA_REPO:-pavan01729/adaptive-minds-loras}
+      LORA_SUBDIRS: ${AM_LORA_SUBDIRS:-qwen2.5-7b/qwen25_chem_v1_grpo,qwen2.5-7b/qwen25_sql_v1}
+      LORA_OUT_DIR: /loras
     volumes:
-      # Only mount build directory if needed for other purposes
-      - ./build:/app/build
+      - lora-cache:/loras
+      - ./docker/prefetch.py:/prefetch.py:ro
+    command:
+      - bash
+      - -lc
+      - "pip install --quiet --no-cache-dir 'huggingface_hub>=0.24' hf_transfer && python3 /prefetch.py"
+    restart: "no"
+
+  vllm:
+    image: vllm/vllm-openai:v0.6.3
+    container_name: am-vllm
+    restart: unless-stopped
     ports:
-      - "8765:8765"  # FastAPI default port
-      - "8501:8501"  # Streamlit port
+      - "${AM_VLLM_PORT:-8000}:8000"
+    environment:
+      HF_TOKEN: ${HF_TOKEN:-}
+    volumes:
+      - hf-cache:/root/.cache/huggingface
+      - lora-cache:/loras:ro
+    depends_on:
+      prefetch:
+        condition: service_completed_successfully
     deploy:
       resources:
         reservations:
@@ -22,39 +63,55 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
-    # Step by step: 1) Download models, 2) Start server, 3) Wait for server, 4) Start UI
     command: >
-      sh -c "
-        echo '📥 STEP 1: Downloading models from Hugging Face...' &&
-        python /app/build/download_models.py &&
-        echo '✅ STEP 1 COMPLETE: All models downloaded!' &&
-        echo '' &&
-        echo '🚀 STEP 2: Starting FastAPI server...' &&
-        cd /app/build &&
-        python server.py &
-        SERVER_PID=\$! &&
-        echo '✅ STEP 2 COMPLETE: FastAPI server started (PID: '\$SERVER_PID')' &&
-        echo '' &&
-        echo '⏳ STEP 3: Waiting for server to be fully ready...' &&
-        sleep 20 &&
-        attempt=1 &&
-        while ! curl -s http://localhost:8765/status > /dev/null 2>&1; do
-          echo '⏳ Attempt '\$attempt': Server not ready yet, waiting 30 more seconds...' &&
-          sleep 30 &&
-          attempt=\$((attempt + 1)) &&
-          if [ \$attempt -gt 20 ]; then
-            echo '❌ Server failed to start after 100 seconds' &&
-            exit 1
-          fi
-        done &&
-        echo '✅ STEP 3 COMPLETE: FastAPI server is ready and responding!' &&
-        echo '' &&
-        echo '🎨 STEP 4: Starting Streamlit frontend...' &&
-        streamlit run /app/build/app_frontend.py --server.port 8501 --server.address 0.0.0.0 &
-        echo '✅ STEP 4 COMPLETE: Streamlit frontend started!' &&
-        echo '' &&
-        echo '🎉 ALL SYSTEMS READY!' &&
-        echo '📡 FastAPI: http://localhost:8765' &&
-        echo '🌐 Streamlit: http://localhost:8501' &&
-        wait
-      " 
+      --model Qwen/Qwen2.5-7B-Instruct
+      --host 0.0.0.0
+      --port 8000
+      --max-lora-rank 64
+      --enable-lora
+      --lora-modules
+      chemistry=/loras/qwen2.5-7b/qwen25_chem_v1_grpo
+      sql=/loras/qwen2.5-7b/qwen25_sql_v1
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/v1/models', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      start_period: 600s   # vLLM cold start can be long
+      retries: 3
+
+  server:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.server
+    container_name: am-server
+    restart: unless-stopped
+    ports:
+      # Override AM_SERVER_PORT in your .env if the default conflicts on
+      # your host (e.g. another local service already bound to 8765).
+      - "${AM_SERVER_PORT:-8765}:8765"
+    environment:
+      VLLM_BASE: ${VLLM_BASE:-http://vllm:8000/v1}
+      AM_CATALOG: ${AM_CATALOG:-/app/catalogs/qwen25_smoke.yaml}
+    depends_on:
+      vllm:
+        condition: service_healthy
+
+  ui:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.ui
+    container_name: am-ui
+    restart: unless-stopped
+    ports:
+      - "${AM_UI_PORT:-8501}:8501"
+    environment:
+      AM_API_BASE: ${AM_API_BASE:-http://server:8765}
+    depends_on:
+      server:
+        condition: service_healthy
+
+volumes:
+  hf-cache:
+    name: am-hf-cache
+  lora-cache:
+    name: am-lora-cache

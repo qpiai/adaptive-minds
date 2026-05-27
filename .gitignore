@@ -53,6 +53,10 @@ base_model/
 loras/
 models/
 
+# Eval / training artefacts
+evals/results/
+training/loras/
+
 # Logs
 *.log
 logs/
