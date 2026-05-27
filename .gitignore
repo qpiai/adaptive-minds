@@ -77,3 +77,7 @@ temp/
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
+# Session-private files (not committed)
+OSS_SESSION_LOG.md
+.battle_test/

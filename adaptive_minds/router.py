@@ -1,7 +1,16 @@
-"""Single-step routers — Manual, Router (model-driven), Auto (keyword + fallback).
+"""Single-step router — the base model picks one adapter, that adapter answers.
 
-Paper reference: §5.2 "From Routing to Agentic Reasoning". The Router mode
-is the headline result in Table 1 — 98.3 % accuracy on a 30-adapter library.
+Paper §5.2 ("From Routing to Agentic Reasoning"); the headline result in
+Table 1 — 98.3 % adapter-selection accuracy on a 30-adapter library.
+
+Two functions are exported:
+
+* `keyword_pick`: cheap baseline used by evaluations (and as the Router's
+  fallback when the LLM picks an out-of-catalog id).
+* `run_router`:   the production router — one LLM call to classify, one
+  LLM call to the chosen adapter.
+
+The CLI exposes both modes via ``adaptive_minds.cli``.
 """
 from __future__ import annotations
 
@@ -14,7 +23,7 @@ def keyword_pick(query: str,
                  catalog: dict[str, Adapter]) -> tuple[str, list[tuple[str, int]]]:
     """Cheap baseline: count keyword hits per adapter, pick the highest.
 
-    Falls back to `general` if no adapter matches and that id exists,
+    Falls back to ``general`` if no adapter matches and that id exists,
     otherwise the first adapter in the catalog.
     """
     q = query.lower()
@@ -30,35 +39,14 @@ def keyword_pick(query: str,
     return fallback, scores
 
 
-def run_manual(adapter_id: str, query: str,
-               catalog: dict[str, Adapter], sysp_override: str | None,
-               sys_prompt_mode: str, temperature: float,
-               max_tokens: int) -> dict:
-    """User pins the adapter; no routing decision."""
-    adapter = catalog[adapter_id]
-    sysp = resolve_sysp(sys_prompt_mode, adapter, sysp_override)
-    msgs = []
-    if sysp:
-        msgs.append({"role": "system", "content": sysp})
-    msgs.append({"role": "user", "content": query})
-    r = vllm_chat(adapter_id, msgs, temperature, max_tokens)
-    r["mode"] = f"manual / sysp={sys_prompt_mode}"
-    r["adapter_id"] = adapter_id
-    r["system_prompt_used"] = sysp
-    r["steps"] = [{
-        "label": "request", "adapter": adapter_id,
-        "sys_prompt_mode": sys_prompt_mode,
-        "system_prompt_used": sysp,
-        "elapsed": r.get("elapsed"),
-    }]
-    return r
-
-
 def run_router(query: str, catalog: dict[str, Adapter], cfg: dict,
                temperature: float, max_tokens: int,
                sys_prompt_mode: str = "trained") -> dict:
-    """Stage 1: base model classifies the query into one adapter.
-    Stage 2: send the query to that adapter."""
+    """Two calls: (1) base model picks an adapter; (2) that adapter answers.
+
+    Falls back to ``keyword_pick`` if the LLM emits an out-of-catalog id —
+    happens rarely but the catalog is the source of truth, not the LLM.
+    """
     domain_list = "\n".join(
         f"- {a.id}: {a.description.strip()[:120]}" for a in catalog.values()
     )
@@ -116,44 +104,3 @@ def run_router(query: str, catalog: dict[str, Adapter], cfg: dict,
             },
         ],
     }
-
-
-def run_auto(query: str, catalog: dict[str, Adapter], cfg: dict,
-             temperature: float, max_tokens: int,
-             sys_prompt_mode: str = "trained") -> dict:
-    """Cheap keyword classifier first; falls back to Router if uncertain.
-
-    The keyword path is the Table-1 baseline. Auto is what you'd ship in
-    production if you wanted to save the routing-LLM call on easy queries.
-    """
-    chosen, scores = keyword_pick(query, catalog)
-    top_two = scores[:2]
-    uncertain = top_two[0][1] == 0 or (
-        len(top_two) > 1 and top_two[0][1] == top_two[1][1] and top_two[0][1] > 0
-    )
-    if uncertain:
-        r = run_router(query, catalog, cfg, temperature, max_tokens,
-                       sys_prompt_mode=sys_prompt_mode)
-        r["mode"] = f"auto→router / sysp={sys_prompt_mode}"
-        r["steps"] = [{"label": "keyword (uncertain)",
-                       "scores": top_two[:4]}] + r["steps"]
-        return r
-
-    adapter = catalog[chosen]
-    sysp = resolve_sysp(sys_prompt_mode, adapter)
-    msgs = []
-    if sysp:
-        msgs.append({"role": "system", "content": sysp})
-    msgs.append({"role": "user", "content": query})
-    r = vllm_chat(chosen, msgs, temperature, max_tokens)
-    r["mode"] = f"auto (keyword) / sysp={sys_prompt_mode}"
-    r["adapter_id"] = chosen
-    r["system_prompt_used"] = sysp
-    r["steps"] = [
-        {"label": "keyword pick", "decision": chosen, "scores": top_two[:4]},
-        {"label": "expert", "adapter": chosen,
-         "request_body": r.get("request_body"),
-         "response_body": r.get("response_body"),
-         "elapsed": r.get("elapsed")},
-    ]
-    return r
