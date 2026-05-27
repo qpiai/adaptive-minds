@@ -25,9 +25,7 @@ def _result(output: str = "", debug: dict | None = None,
     }
 
 
-# -----------------------------------------------------------------------
 # Calculator — sympy-based symbolic + numeric math
-# -----------------------------------------------------------------------
 
 def calc_handler(sub_query: str) -> dict:
     """Evaluate a math expression with sympy.
@@ -80,9 +78,7 @@ def calc_handler(sub_query: str) -> dict:
                               "traceback": traceback.format_exc()})
 
 
-# -----------------------------------------------------------------------
 # Python code sandbox — subprocess with timeout
-# -----------------------------------------------------------------------
 
 _CODE_TIMEOUT_SEC = 12
 
@@ -121,9 +117,7 @@ def code_handler(sub_query: str) -> dict:
                               "traceback": traceback.format_exc()})
 
 
-# -----------------------------------------------------------------------
 # Shell — execute a bash one-liner in a sandboxed subprocess.
-# -----------------------------------------------------------------------
 
 def shell_handler(sub_query: str) -> dict:
     """Run a bash one-liner with a hard 10s timeout. Captures stdout+stderr."""
@@ -158,9 +152,7 @@ def shell_handler(sub_query: str) -> dict:
                           "returncode": p.returncode})
 
 
-# -----------------------------------------------------------------------
 # DuckDuckGo web search
-# -----------------------------------------------------------------------
 
 def websearch_handler(sub_query: str) -> dict:
     """Search the web via DuckDuckGo and return top 5 hits."""
@@ -194,9 +186,7 @@ def websearch_handler(sub_query: str) -> dict:
                               "traceback": traceback.format_exc()})
 
 
-# -----------------------------------------------------------------------
 # PuLP — linear programming
-# -----------------------------------------------------------------------
 
 def pulp_handler(sub_query: str) -> dict:
     """Solve a small LP/MIP. JSON spec preferred; falls back to Python snippet."""

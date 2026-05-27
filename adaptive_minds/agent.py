@@ -35,10 +35,9 @@ You write THOUGHT lines and ACTION lines. Two kinds of actions:
   CALL: <name> | <argument>      run a tool or consult an expert
   FINAL: <answer>                emit the final answer for the user
 
-You MAY emit multiple `CALL:` lines in a single response when the
-sub-tasks are independent — the runtime will execute them in order and
-return all observations back to you in one block. When you have enough
-information, end with `FINAL:`.
+You MAY emit multiple `CALL:` lines in a single response when the sub-tasks
+are independent — the runtime executes them in order and returns all
+observations back in one block. End with `FINAL:` when ready.
 
 Example (multi-call planning):
 
@@ -46,16 +45,6 @@ Example (multi-call planning):
   CALL: mermaid  | sequenceDiagram\\n  A->>B: ping\\n  B->>A: pong
   CALL: chemistry | Mechanism of action for tirzepatide.
   CALL: shell    | wc -l x.v | awk '$1 > 80 {print "too long"}'
-
-Example (sequential, when later calls need earlier results):
-
-  THOUGHT: find the SMILES first, then describe the mechanism.
-  CALL: websearch | tirzepatide SMILES
-
-  -- (next turn, after observation)
-
-  THOUGHT: now interpret it.
-  CALL: chemistry | Mechanism of action for tirzepatide (SMILES: ...).
 
 == rules ==
   1. Arguments are plain text by default. Only `pulp` requires JSON.
