@@ -1,29 +1,52 @@
-# Adaptive Minds — Streamlit UI container.
-# Talks to the `server` service via AM_API_BASE.
+# Multi-stage Node build for the Next.js chat UI (replaces the v0.1
+# Streamlit app shipped at bee4715). The Streamlit deps are no longer
+# required to run the UI.
+#
+# Stage 1 (builder): install deps + `next build` with output:standalone.
+# Stage 2 (runner):  copy the standalone bundle + minimal node_modules.
+#
+# Standalone output keeps the runtime image small — the full node_modules
+# stays in the builder stage and is dropped from the final image.
 
-FROM python:3.11-slim
+FROM node:20-alpine AS builder
+WORKDIR /app
 
 LABEL org.opencontainers.image.title="adaptive-minds-ui"
 LABEL org.opencontainers.image.source="https://github.com/qpiai/adaptive-minds"
 
-ENV PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1
+# Install deps from lockfile if present; fall back to a clean install.
+COPY ui/package.json ui/package-lock.json* ./
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
+# Bake NEXT_PUBLIC_AM_API_BASE in at build time. Compose passes this through
+# via `args:` in docker-compose.yml; the default targets the host's port
+# mapping (8765 unless overridden by AM_SERVER_PORT).
+ARG NEXT_PUBLIC_AM_API_BASE=http://localhost:8765
+ENV NEXT_PUBLIC_AM_API_BASE=$NEXT_PUBLIC_AM_API_BASE
+ARG NEXT_PUBLIC_DEFAULT_MODE=router
+ENV NEXT_PUBLIC_DEFAULT_MODE=$NEXT_PUBLIC_DEFAULT_MODE
+
+COPY ui/ ./
+RUN npm run build
+
+# ---------------------------------------------------------------------------
+FROM node:20-alpine AS runner
 WORKDIR /app
 
-COPY pyproject.toml README.md LICENSE ./
-COPY adaptive_minds ./adaptive_minds
-RUN pip install --no-cache-dir -e ".[ui]"
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    PORT=3000 \
+    HOSTNAME=0.0.0.0
 
-COPY ui ./ui
+# Standalone output: .next/standalone/ has the minimal server.js + needed
+# node_modules; .next/static/ ships separately.
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
 
-EXPOSE 8501
+EXPOSE 3000
 
-HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health', timeout=3)" || exit 1
+HEALTHCHECK --interval=15s --timeout=4s --start-period=20s --retries=3 \
+    CMD wget -q -O- http://localhost:3000 > /dev/null || exit 1
 
-CMD ["streamlit", "run", "ui/app.py", \
-     "--server.address", "0.0.0.0", \
-     "--server.port", "8501", \
-     "--server.headless", "true", \
-     "--browser.gatherUsageStats", "false"]
+CMD ["node", "server.js"]

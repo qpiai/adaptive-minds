@@ -21,7 +21,7 @@ def test_help_root(runner: CliRunner) -> None:
     """Top-level --help lists every subcommand we ship."""
     r = runner.invoke(app, ["--help"])
     assert r.exit_code == 0
-    for sub in ("serve", "server", "ui", "route", "agent", "list"):
+    for sub in ("serve", "server", "route", "agent", "list"):
         assert sub in r.stdout, f"missing subcommand in help: {sub}"
 
 

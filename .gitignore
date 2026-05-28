@@ -81,3 +81,10 @@ dmypy.json
 # Session-private files (not committed)
 OSS_SESSION_LOG.md
 .battle_test/
+
+# Next.js UI build artefacts (Docker builds these inside the container)
+ui/node_modules/
+ui/.next/
+ui/out/
+ui/.env.local
+ui/next-env.d.ts

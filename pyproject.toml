@@ -40,9 +40,10 @@ serve = [
     "uvicorn[standard]>=0.27",
     "pydantic>=2.0",
 ]
-ui = [
-    "streamlit>=1.31",
-]
+# The chat UI is a Next.js app under `ui/` — built and served via
+# `docker compose up -d` (the `ui` service uses docker/Dockerfile.ui)
+# or `cd ui && npm install && npm run dev` for local development.
+# No Python-side UI dependency.
 vllm = [
     "vllm>=0.6.3",
 ]

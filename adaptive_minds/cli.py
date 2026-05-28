@@ -2,10 +2,13 @@
 
     adaptive-minds serve   --catalog catalogs/qwen25_30.yaml      # vLLM launch helper
     adaptive-minds server  --catalog catalogs/qwen25_30.yaml      # FastAPI server
-    adaptive-minds ui                                              # Streamlit UI
     adaptive-minds route   --catalog catalogs/qwen25_30.yaml --query "..."
     adaptive-minds agent   --catalog catalogs/qwen25_30.yaml --query "..."
     adaptive-minds list    --catalog catalogs/qwen25_30.yaml
+
+The chat UI is a Next.js app under `ui/`; bring it up via
+`docker compose up -d` (the `ui` service) or `cd ui && npm run dev` for
+local development.
 """
 from __future__ import annotations
 
@@ -152,36 +155,6 @@ def server(
         "adaptive_minds.server:app",
         host=host, port=port, reload=reload, log_level="info",
     )
-
-
-@app.command()
-def ui(
-    api_base: str = typer.Option("http://localhost:8765", "--api-base",
-                                 envvar="AM_API_BASE",
-                                 help="URL of the adaptive-minds FastAPI server"),
-    host: str = typer.Option("0.0.0.0", "--host"),
-    port: int = typer.Option(8501, "--port"),
-) -> None:
-    """Launch the Streamlit chat UI (talks to a running `adaptive-minds server`)."""
-    try:
-        import streamlit  # noqa: F401
-    except ImportError:
-        typer.secho("ERROR: install the [ui] extra: pip install '.[ui]'",
-                    fg="red")
-        raise typer.Exit(1)
-    here = Path(__file__).resolve().parents[1]
-    app_path = here / "ui" / "app.py"
-    if not app_path.exists():
-        typer.secho(f"ERROR: ui/app.py not found at {app_path}", fg="red")
-        raise typer.Exit(1)
-    os.environ["AM_API_BASE"] = api_base
-    os.execvp("streamlit", [
-        "streamlit", "run", str(app_path),
-        "--server.address", host,
-        "--server.port", str(port),
-        "--server.headless", "true",
-        "--browser.gatherUsageStats", "false",
-    ])
 
 
 if __name__ == "__main__":

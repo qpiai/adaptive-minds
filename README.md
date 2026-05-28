@@ -22,7 +22,7 @@
 
 ![Adaptive Minds UI](docs/screenshot.png)
 
-<sub><i>(Screenshot captured from the bundled Streamlit UI talking to a 2-adapter docker-compose stack. Replace with your own after running `docker compose up -d`.)</i></sub>
+<sub><i>(Screenshot from the Next.js chat UI talking to a 2-adapter docker-compose stack. Replace with your own after running `docker compose up -d`.)</i></sub>
 
 ---
 
@@ -41,7 +41,7 @@
 | **5 external tools** | `calculator` (sympy), `code` (Python sandbox), `shell` (bash sandbox), `websearch` (DDG), `pulp` (LP solver). Plug in your own with one function. |
 | **30 LoRA specialists** | SQL, Cypher, SPARQL, bash, Mermaid, PII, quantum, legal, chem + 21 domain experts. All on the HF Hub; one YAML adds your own. |
 | **FastAPI server** | `/health`, `/adapters`, `/route`, `/agent`, `/chat`. Pydantic-validated, CORS-open, no torch/transformers in the server layer. |
-| **Streamlit UI** | Chat-style, mode toggle, adapter list, trace expander. Talks to the FastAPI server. |
+| **Next.js chat UI** | Chat-style, mode toggle (Router / Agent), adapter sidebar, trace expander, `@xyflow/react` router-decision viz. Tailwind + framer-motion + react-markdown. Talks to the FastAPI server directly (CORS open). |
 | **Docker compose** | `docker compose up -d` brings up vLLM + server + UI. |
 | **Reproducible evals** | `evals/routing_table1.py` and `evals/mmlu_three_way.py` for paper Tables 1 and 3; shared SFT recipe in `training/` for Table 2. |
 | **151-query gold set** | Hand-labeled router benchmark ships in `evals/gold/routing_gold.jsonl`. |
@@ -57,7 +57,7 @@ cp .env.example .env             # then fill in HF_TOKEN
 docker compose up -d
 ```
 
-Wait for vLLM to download the base model + 2 smoke adapters (~5–15 min first time, watch `docker compose logs -f vllm`), then open **http://localhost:8501**.
+Wait for vLLM to download the base model + 2 smoke adapters (~5–15 min first time, watch `docker compose logs -f vllm`), then open **http://localhost:3000**.
 
 To run the full 30-adapter catalog instead of the 2-adapter smoke setup, edit `docker-compose.yml`'s `vllm` `--lora-modules` to match `catalogs/qwen25_30.yaml` and set `AM_CATALOG=/app/catalogs/qwen25_30.yaml` in `.env`. The helper
 
@@ -70,14 +70,14 @@ prints the exact `vllm serve` line you need.
 ## 🐍 Quickstart (pip, against an existing vLLM)
 
 ```bash
-pip install -e ".[serve,ui,tools]"
+pip install -e ".[serve,tools]"
 export VLLM_BASE=http://your-vllm-host:8000/v1
 
 # 1. Start the FastAPI server
 adaptive-minds server --catalog catalogs/qwen25_30.yaml &
 
-# 2. (Optional) launch the Streamlit UI
-adaptive-minds ui &
+# 2. (Optional) launch the Next.js UI from source
+cd ui && npm install && NEXT_PUBLIC_AM_API_BASE=http://localhost:8765 npm run dev
 
 # 3. Or use the CLI directly:
 adaptive-minds route --catalog catalogs/qwen25_30.yaml \
@@ -125,9 +125,9 @@ print(r["adapter_id"], "→", r["response"])
 
 ```
 ┌──────────────┐    ┌───────────────┐    ┌────────────────────────────┐
-│  Streamlit   │ ─▶ │  FastAPI      │ ─▶ │  vLLM (OpenAI /v1)         │
-│  ui/app.py   │    │  /chat /route │    │  base model                │
-│              │    │  /agent       │    │  + LoRA adapters by name   │
+│  Next.js UI  │ ─▶ │  FastAPI      │ ─▶ │  vLLM (OpenAI /v1)         │
+│  ui/         │    │  /chat /route │    │  base model                │
+│  (port 3000) │    │  /agent       │    │  + LoRA adapters by name   │
 └──────────────┘    └───────────────┘    └────────────────────────────┘
                             │
                             ├─ run_router  ── single-step semantic routing (paper §5.2)
@@ -176,7 +176,7 @@ Full details in [`evals/README.md`](evals/README.md).
 ```
 adaptive-minds/
 ├── adaptive_minds/      # runtime: router, agent, tools, catalog, server, CLI
-├── ui/                  # Streamlit chat UI
+├── ui/                  # Next.js 14 chat UI (Tailwind + framer-motion + xyflow)
 ├── catalogs/            # YAML adapter catalogs (30-adapter + 2-adapter smoke)
 ├── evals/               # paper-table reproduction scripts + 151-query gold set
 ├── training/            # shared SFT recipe + per-benchmark mapping
@@ -191,7 +191,6 @@ adaptive-minds/
 
 These are intentionally out of v0.1 to keep the public surface minimal:
 
-- **Next.js chat UI** (replaces the current Streamlit `ui/`) — Tailwind + framer-motion + `@xyflow/react` for the router-decision visualisation.
 - **Entropy H(Q) mode classifier** (paper §5.5) — auto-selects router vs agent based on the base model's first-16-token entropy.
 - **SSE streaming** in the UI (server already structured for it).
 - **PEFT-backed in-process runtime** for single-GPU deployments.
