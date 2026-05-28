@@ -2,7 +2,7 @@
 
 # 🧠 Adaptive Minds
 
-### LoRA adapters as callable tools for agent orchestration
+### LoRA adapters as callable tools for one base model
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/downloads/)
@@ -10,7 +10,7 @@
 [![HuggingFace adapters](https://img.shields.io/badge/🤗-adaptive--minds--loras-yellow)](https://huggingface.co/pavan01729/adaptive-minds-loras)
 [![arXiv](https://img.shields.io/badge/arXiv-2510.15416-b31b1b.svg)](https://arxiv.org/abs/2510.15416)
 
-**One base model. Many LoRA experts. The model decides which one(s) to use.**
+**One base model. Many LoRA experts. The model picks which one(s) to use.**
 
 [Quickstart](#-quickstart-docker) · [Try it](#-try-it) · [Reproduce paper results](#-reproducing-paper-results) · [Architecture](docs/ARCHITECTURE.md) · [Contributing](CONTRIBUTING.md)
 
@@ -18,26 +18,24 @@
 
 ---
 
-> 📺 **Demo**
-
 ![Adaptive Minds UI](docs/screenshot.png)
 
-<sub><i>(Screenshot from the Next.js chat UI talking to a 2-adapter docker-compose stack. Replace with your own after running `docker compose up -d`.)</i></sub>
+<sub><i>The Next.js chat UI. Four modes — Router · Agent · Auto · LangGraph — over the same FastAPI / vLLM stack. Capture your own with <code>python scripts/capture_demo.py</code> after <code>docker compose up -d</code>.</i></sub>
 
 ---
 
-## ✨ Why Adaptive Minds
+## What is this?
 
-- **🎯 Specialization, not parameter merging.** Instead of merging LoRAs into a single weight blend, each adapter stays a named, callable tool. The base model picks the right one for the query at inference time.
-- **🤖 Two modes, one runtime.** Single-step **Router** for direct domain queries, multi-step **ReAct Agent** for tasks that need multiple experts or external tools (calculator, code, shell, web, LP solver).
-- **📦 Built on standards.** vLLM serves the base model + adapters by name via its native `--lora-modules`; the runtime is pure Python over the OpenAI-compatible endpoint. No bespoke serving stack.
+Instead of merging LoRAs into one weight blend, **Adaptive Minds keeps each adapter as a named, callable tool**. vLLM serves the base model + every adapter from one endpoint; the runtime is pure Python over the OpenAI-compatible HTTP surface — no bespoke serving stack. The base model picks the right adapter at inference time, either in a single call (Router) or via a multi-step ReAct loop that can also dispatch external tools (Agent).
 
 ## 🚀 Features
 
 | | |
 |---|---|
-| **Router mode** | Single base-model call picks the right adapter from the catalog. **98.3%** routing accuracy on a 30-adapter library (paper Table 1). |
-| **Agent mode** | ReAct loop with `THOUGHT / CALL / OBSERVATION / FINAL` grammar. CALLs can be adapters *or* external tools. Multi-CALL planning per turn. |
+| **🎯 Router** | One base-model call picks the adapter, that adapter answers. **98.3%** routing accuracy on a 30-adapter library (paper Table 1). |
+| **🤖 Agent** | ReAct loop with `THOUGHT / CALL / OBSERVATION / FINAL` grammar. CALLs can be adapters *or* external tools. Multi-CALL planning per turn. |
+| **🪄 Auto** | Heuristic dispatcher — short single-domain queries go to Router; multi-step / compound queries go to Agent. The decision is returned so you see what was picked and why. |
+| **🕸️ LangGraph** | The Agent loop expressed as a `langgraph.StateGraph` (plan → dispatch → synthesise). Same behaviour, observable as node visits. |
 | **5 external tools** | `calculator` (sympy), `code` (Python sandbox), `shell` (bash sandbox), `websearch` (DDG), `pulp` (LP solver). Plug in your own with one function. |
 | **30 LoRA specialists** | SQL, Cypher, SPARQL, bash, Mermaid, PII, quantum, legal, chem + 21 domain experts. All on the HF Hub; one YAML adds your own. |
 | **FastAPI server** | `/health`, `/adapters`, `/route`, `/agent`, `/chat`. Pydantic-validated, CORS-open, no torch/transformers in the server layer. |
@@ -46,7 +44,7 @@
 | **Reproducible evals** | `evals/routing_table1.py` and `evals/mmlu_three_way.py` for paper Tables 1 and 3; shared SFT recipe in `training/` for Table 2. |
 | **151-query gold set** | Hand-labeled router benchmark ships in `evals/gold/routing_gold.jsonl`. |
 | **`nanoam.py`** | A self-contained 295-line reference impl. `cat nanoam.py` to grasp the whole framework in 5 minutes. |
-| **CI + tests** | 32 pytest cases, no GPU/network needed. Matrix on Python 3.10 / 3.11 / 3.12. |
+| **CI + tests** | 41 pytest cases, no GPU/network needed. Matrix on Python 3.10 / 3.11 / 3.12. |
 
 ## ⚡ Quickstart (Docker)
 

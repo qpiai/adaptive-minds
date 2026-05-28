@@ -73,6 +73,9 @@ temp/
 .pytest_cache/
 .coverage
 
+# ruff
+.ruff_cache/
+
 # mypy
 .mypy_cache/
 .dmypy.json
