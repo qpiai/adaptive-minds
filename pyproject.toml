@@ -39,6 +39,9 @@ serve = [
     "fastapi>=0.110",
     "uvicorn[standard]>=0.27",
     "pydantic>=2.0",
+    # LangGraph backs the /chat?mode=langgraph endpoint. Pure-python install;
+    # the imperative agent.py works without it.
+    "langgraph>=0.2",
 ]
 # The chat UI is a Next.js app under `ui/` — built and served via
 # `docker compose up -d` (the `ui` service uses docker/Dockerfile.ui)

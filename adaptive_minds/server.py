@@ -23,6 +23,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from .agent import run_agent
+from .auto import run_auto  # noqa: F401 — referenced by _resolve_runner via getattr
 from .catalog import load_catalog, router_cfg
 from .common import VLLM_BASE
 from .router import run_router
@@ -79,7 +80,10 @@ class AdapterInfo(BaseModel):
 
 class ChatRequest(BaseModel):
     query: str = Field(..., min_length=1, max_length=8000)
-    mode: Literal["router", "agent"] = "router"
+    # The four modes the UI exposes. ``auto`` and ``langgraph`` dispatch to
+    # the agent or a LangGraph-driven equivalent of it; see
+    # adaptive_minds.auto and adaptive_minds.langgraph_agent.
+    mode: Literal["router", "agent", "auto", "langgraph"] = "router"
     temperature: float = Field(0.3, ge=0.0, le=2.0)
     max_tokens: int = Field(512, ge=1, le=8192)
     sys_prompt_mode: Literal["trained", "generic", "none"] = "trained"
@@ -173,10 +177,35 @@ def agent(req: AgentRequest) -> dict[str, Any]:
     )
 
 
+def _resolve_runner(mode: str):
+    # Look up by module attribute every call so unit tests can monkeypatch
+    # ``adaptive_minds.server.run_router`` / ``run_agent`` etc. and have
+    # the patches survive. (A pre-built dict would snapshot the originals.)
+    import sys
+    m = sys.modules[__name__]
+    if mode == "router":
+        return m.run_router
+    if mode == "agent":
+        return m.run_agent
+    if mode == "auto":
+        return m.run_auto
+    if mode == "langgraph":
+        try:
+            from .langgraph_agent import run_langgraph_agent
+        except ImportError as e:
+            raise HTTPException(
+                status_code=501,
+                detail=("langgraph mode requires the [serve] extra. "
+                        f"pip install '.[serve]' — {e}"),
+            ) from e
+        return run_langgraph_agent
+    raise HTTPException(400, f"unknown mode: {mode}")
+
+
 @app.post("/chat")
 def chat(req: ChatRequest) -> dict[str, Any]:
     _require_catalog()
-    fn = run_router if req.mode == "router" else run_agent
+    fn = _resolve_runner(req.mode)
     out = fn(
         req.query, _state.catalog, _state.cfg,
         temperature=req.temperature, max_tokens=req.max_tokens,

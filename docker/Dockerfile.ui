@@ -35,7 +35,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
-    PORT=3000 \
+    PORT=7007 \
     HOSTNAME=0.0.0.0
 
 # Standalone output: .next/standalone/ has the minimal server.js + needed
@@ -44,9 +44,9 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
-EXPOSE 3000
+EXPOSE 7007
 
 HEALTHCHECK --interval=15s --timeout=4s --start-period=20s --retries=3 \
-    CMD wget -q -O- http://localhost:3000 > /dev/null || exit 1
+    CMD wget -q -O- http://localhost:7007 > /dev/null || exit 1
 
 CMD ["node", "server.js"]

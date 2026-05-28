@@ -41,7 +41,7 @@
 | **5 external tools** | `calculator` (sympy), `code` (Python sandbox), `shell` (bash sandbox), `websearch` (DDG), `pulp` (LP solver). Plug in your own with one function. |
 | **30 LoRA specialists** | SQL, Cypher, SPARQL, bash, Mermaid, PII, quantum, legal, chem + 21 domain experts. All on the HF Hub; one YAML adds your own. |
 | **FastAPI server** | `/health`, `/adapters`, `/route`, `/agent`, `/chat`. Pydantic-validated, CORS-open, no torch/transformers in the server layer. |
-| **Next.js chat UI** | Chat-style, mode toggle (Router / Agent), adapter sidebar, trace expander, `@xyflow/react` router-decision viz. Tailwind + framer-motion + react-markdown. Talks to the FastAPI server directly (CORS open). |
+| **Next.js chat UI** | Four-mode tab nav (Router / Agent / Auto / LangGraph), adapter sidebar, trace expander, `@xyflow/react` decision + state-graph viz. Tailwind + framer-motion + react-markdown. Talks to FastAPI directly (CORS open). Port `7007`. |
 | **Docker compose** | `docker compose up -d` brings up vLLM + server + UI. |
 | **Reproducible evals** | `evals/routing_table1.py` and `evals/mmlu_three_way.py` for paper Tables 1 and 3; shared SFT recipe in `training/` for Table 2. |
 | **151-query gold set** | Hand-labeled router benchmark ships in `evals/gold/routing_gold.jsonl`. |
@@ -57,7 +57,7 @@ cp .env.example .env             # then fill in HF_TOKEN
 docker compose up -d
 ```
 
-Wait for vLLM to download the base model + 2 smoke adapters (~5–15 min first time, watch `docker compose logs -f vllm`), then open **http://localhost:3000**.
+Wait for vLLM to download the base model + 2 smoke adapters (~5–15 min first time, watch `docker compose logs -f vllm`), then open **http://localhost:7007**.
 
 To run the full 30-adapter catalog instead of the 2-adapter smoke setup, edit `docker-compose.yml`'s `vllm` `--lora-modules` to match `catalogs/qwen25_30.yaml` and set `AM_CATALOG=/app/catalogs/qwen25_30.yaml` in `.env`. The helper
 
@@ -127,7 +127,7 @@ print(r["adapter_id"], "→", r["response"])
 ┌──────────────┐    ┌───────────────┐    ┌────────────────────────────┐
 │  Next.js UI  │ ─▶ │  FastAPI      │ ─▶ │  vLLM (OpenAI /v1)         │
 │  ui/         │    │  /chat /route │    │  base model                │
-│  (port 3000) │    │  /agent       │    │  + LoRA adapters by name   │
+│  (port 7007) │    │  /agent       │    │  + LoRA adapters by name   │
 └──────────────┘    └───────────────┘    └────────────────────────────┘
                             │
                             ├─ run_router  ── single-step semantic routing (paper §5.2)

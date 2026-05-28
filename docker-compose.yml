@@ -110,7 +110,7 @@ services:
     container_name: am-ui
     restart: unless-stopped
     ports:
-      - "${AM_UI_PORT:-3000}:3000"
+      - "${AM_UI_PORT:-7007}:7007"
     depends_on:
       server:
         condition: service_healthy
