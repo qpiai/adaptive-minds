@@ -97,6 +97,10 @@ ui/next-env.d.ts
 video/node_modules/
 video/out/
 video/public/app.mp4
+video/public/bgm.mp3
+# Raw BGM track is not redistributed (licensing) — the rendered docs/demo.mp4
+# carries the music; supply your own docs/bgm.mp3 to re-render.
+docs/bgm.mp3
 docs/.rec/
 
 # Re-allow the UI's typed API client; the broad `lib/` Python rule above

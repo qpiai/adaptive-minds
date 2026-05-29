@@ -1,6 +1,7 @@
 import React from "react";
 import {
   AbsoluteFill,
+  Audio,
   Easing,
   interpolate,
   OffthreadVideo,
@@ -279,8 +280,21 @@ const Outro: React.FC = () => {
 // ---------- composition root ------------------------------------------------
 
 export const Demo: React.FC<{ appFrames: number }> = ({ appFrames }) => {
+  const { durationInFrames } = useVideoConfig();
   return (
     <AbsoluteFill style={{ background: "#06080d" }}>
+      {/* Subtle BGM bed: fade in ~0.7s, hold at 0.35, fade out ~1.3s. */}
+      <Audio
+        src={staticFile("bgm.mp3")}
+        volume={(f) =>
+          interpolate(
+            f,
+            [0, 20, durationInFrames - 40, durationInFrames],
+            [0, 0.35, 0.35, 0],
+            { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+          )
+        }
+      />
       <Sequence durationInFrames={INTRO_FRAMES}>
         <Intro />
       </Sequence>

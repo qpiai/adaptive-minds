@@ -18,11 +18,18 @@ PY="${PYTHON:-python}"
 GIF_WIDTH="${GIF_WIDTH:-1000}"
 GIF_FPS="${GIF_FPS:-15}"
 
-echo "==> 1/4  Capturing 1080p app footage with Playwright"
+echo "==> 1/4  Capturing 1080p light-mode app footage with Playwright"
 "$PY" scripts/capture_demo.py
 
-echo "==> 2/4  Installing Remotion deps (if needed)"
+echo "==> 2/4  Installing Remotion deps + staging BGM (if present)"
 [ -d video/node_modules ] || npm --prefix video install
+if [ -f docs/bgm.mp3 ]; then
+  cp -f docs/bgm.mp3 video/public/bgm.mp3
+else
+  echo "    (no docs/bgm.mp3 — generating a silent placeholder track)"
+  ffmpeg -y -f lavfi -i anullsrc=r=44100:cl=stereo -t 2 \
+    -q:a 9 video/public/bgm.mp3 >/dev/null 2>&1
+fi
 
 echo "==> 3/4  Rendering branded video with Remotion → docs/demo.mp4"
 npm --prefix video run render

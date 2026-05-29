@@ -35,7 +35,12 @@ APP_MP4 = ROOT / "video" / "public" / "app.mp4"
 DOCS.mkdir(parents=True, exist_ok=True)
 APP_MP4.parent.mkdir(parents=True, exist_ok=True)
 
-W, H = 1920, 1080
+# Lay the app out at a smaller viewport (bigger UI elements) but record at
+# 1080p so the footage is zoomed-in yet crisp. device_scale_factor=2 keeps
+# text sharp. Both are 16:9 → no crop when Remotion places it full-frame.
+VIEW_W = int(os.environ.get("AM_VIEW_W", "1440"))
+VIEW_H = int(os.environ.get("AM_VIEW_H", "810"))
+REC_W, REC_H = 1920, 1080
 
 # (mode label, query, whether to expand the trace afterwards)
 SCRIPT: list[tuple[str, str, bool]] = [
@@ -89,13 +94,17 @@ def main() -> int:
         shutil.rmtree(record_dir)
     record_dir.mkdir(parents=True)
 
-    size = {"width": W, "height": H}
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(
-            viewport=size,
+            viewport={"width": VIEW_W, "height": VIEW_H},
+            device_scale_factor=2,
             record_video_dir=str(record_dir),
-            record_video_size=size,
+            record_video_size={"width": REC_W, "height": REC_H},
+        )
+        # Capture in LIGHT mode (the no-flash script reads this on load).
+        context.add_init_script(
+            "try{localStorage.setItem('am-theme','light')}catch(e){}"
         )
         page = context.new_page()
         print(f"[capture_demo] opening {UI_URL}", flush=True)
@@ -129,7 +138,7 @@ def main() -> int:
     print(f"[capture_demo] ffmpeg → {APP_MP4}", flush=True)
     subprocess.run([
         "ffmpeg", "-y", "-i", str(webm),
-        "-vf", f"scale={W}:{H}:flags=lanczos,fps=30",
+        "-vf", f"scale={REC_W}:{REC_H}:flags=lanczos,fps=30",
         "-c:v", "libx264", "-crf", "18", "-preset", "medium",
         "-pix_fmt", "yuv420p", "-movflags", "+faststart",
         str(APP_MP4),
