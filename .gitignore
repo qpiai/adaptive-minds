@@ -91,3 +91,8 @@ ui/.next/
 ui/out/
 ui/.env.local
 ui/next-env.d.ts
+
+# Re-allow the UI's typed API client; the broad `lib/` Python rule above
+# would otherwise swallow it (page.tsx imports from `@/lib/api`).
+!ui/src/lib/
+!ui/src/lib/**

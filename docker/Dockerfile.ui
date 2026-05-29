@@ -18,10 +18,11 @@ LABEL org.opencontainers.image.source="https://github.com/qpiai/adaptive-minds"
 COPY ui/package.json ui/package-lock.json* ./
 RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
-# Bake NEXT_PUBLIC_AM_API_BASE in at build time. Compose passes this through
-# via `args:` in docker-compose.yml; the default targets the host's port
-# mapping (8765 unless overridden by AM_SERVER_PORT).
-ARG NEXT_PUBLIC_AM_API_BASE=http://localhost:8765
+# NEXT_PUBLIC_AM_API_BASE is baked at build time. Empty (the default) →
+# the UI uses relative `/api/am/*` paths and the Next.js server proxies
+# to the `server` container over the docker network. Set it explicitly
+# only to bypass the proxy (e.g. UI hosted separately from FastAPI).
+ARG NEXT_PUBLIC_AM_API_BASE=
 ENV NEXT_PUBLIC_AM_API_BASE=$NEXT_PUBLIC_AM_API_BASE
 ARG NEXT_PUBLIC_DEFAULT_MODE=router
 ENV NEXT_PUBLIC_DEFAULT_MODE=$NEXT_PUBLIC_DEFAULT_MODE

@@ -9,7 +9,7 @@ LABEL org.opencontainers.image.source="https://github.com/qpiai/adaptive-minds"
 
 ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    AM_CATALOG=/app/catalogs/qwen25_smoke.yaml
+    AM_CATALOG=/app/catalogs/qwen25_30.yaml
 
 WORKDIR /app
 
@@ -26,6 +26,7 @@ EXPOSE 8765
 HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8765/health', timeout=3)" || exit 1
 
-CMD ["python", "-m", "adaptive_minds.cli", "server", \
-     "--catalog", "/app/catalogs/qwen25_smoke.yaml", \
-     "--host", "0.0.0.0", "--port", "8765"]
+# Shell form so $AM_CATALOG is interpolated at runtime — lets compose /
+# users override the catalog via env without rebuilding the image.
+CMD exec python -m adaptive_minds.cli server \
+    --catalog "$AM_CATALOG" --host 0.0.0.0 --port 8765

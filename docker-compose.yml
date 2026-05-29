@@ -1,27 +1,27 @@
 # Adaptive Minds — full stack via Docker Compose.
 #
-# Quickstart:
-#   1. Copy .env.example → .env and fill in HF_TOKEN.
-#   2. docker compose up -d
-#   3. Open http://localhost:8501 (or $AM_UI_PORT) once
-#      `docker compose logs vllm` shows "Application startup complete."
-#      Cold start is ~5–15 min the first time (downloads Qwen2.5-7B
-#      + the 2 smoke adapters into a Docker volume).
+# One command:
+#   docker compose up -d
+#   open http://localhost:7007
+#
+# Defaults to the paper's 30-adapter catalog. First boot is ~15–30 min
+# (downloads Qwen2.5-7B + 30 LoRA adapters into named volumes); subsequent
+# starts are instant.
 #
 # How LoRAs are loaded:
-#   `prefetch` runs first, downloading the adapters listed in
-#   $AM_LORA_SUBDIRS into the `lora-cache` volume. Then `vllm` boots with
-#   --lora-modules pointing at those local paths. The download is cached
-#   in the named volume so subsequent `up` calls are instant.
+#   `prefetch` runs first, downloading every adapter in $AM_LORA_SUBDIRS
+#   into the `lora-cache` volume. Then `vllm` boots with --lora-modules
+#   pointing at those local paths.
 #
-# To swap to the full 30-adapter catalog: extend AM_LORA_SUBDIRS in .env
-# and add matching `--lora-modules <name>=/loras/<subdir>` entries below.
-# The helper `adaptive-minds serve --catalog <yaml>` prints exactly the
-# command line.
+# Swap to the 2-adapter smoke catalog (fast first boot, ~5 min):
+#   in .env set AM_CATALOG=/app/catalogs/qwen25_smoke.yaml
+#                 AM_LORA_SUBDIRS=qwen2.5-7b/qwen25_chem_v1_grpo,qwen2.5-7b/qwen25_sql_v1
+#   and trim the `vllm` --lora-modules list below to just chemistry + sql.
 #
-# To skip vLLM (e.g. point at a remote vLLM endpoint):
-#   docker compose up server ui
-#   # ensure VLLM_BASE in .env points at the remote endpoint.
+# Browser → API is proxied via the Next.js `ui` service (`/api/am/* →
+# server:8765`). No host-port wiring needed in the browser bundle, so the
+# same image works whether you hit localhost, a remote IP, or a reverse
+# proxy — no NEXT_PUBLIC_AM_API_BASE override required.
 
 services:
   prefetch:
@@ -31,7 +31,10 @@ services:
       HF_TOKEN: ${HF_TOKEN:-}
       HF_HUB_ENABLE_HF_TRANSFER: "1"
       LORA_REPO: ${AM_LORA_REPO:-pavan01729/adaptive-minds-loras}
-      LORA_SUBDIRS: ${AM_LORA_SUBDIRS:-qwen2.5-7b/qwen25_chem_v1_grpo,qwen2.5-7b/qwen25_sql_v1}
+      # All 30 paper-catalog adapters. Override AM_LORA_SUBDIRS in .env to
+      # prefetch a subset (e.g. the smoke pair) and trim --lora-modules
+      # below to match.
+      LORA_SUBDIRS: ${AM_LORA_SUBDIRS:-qwen2.5-7b/qwen25_sql_v1,qwen2.5-7b/qwen25_cypher_v1,qwen2.5-7b/qwen25_bash_v1,qwen2.5-7b/qwen25_sparql_v1,qwen2.5-7b/qwen25_mermaid_v1,qwen2.5-7b/qwen25_pii_v1,qwen2.5-7b/qwen25_quantum_v1_grpo,qwen2.5-7b/qwen25_legal_v1_grpo,qwen2.5-7b/qwen25_chem_v1_grpo,qwen2.5-7b/qwen25_reasoning_v1,qwen2.5-7b/qwen25_astrophysics_v1,qwen2.5-7b/qwen25_biology_v1,qwen2.5-7b/qwen25_case_law_v1,qwen2.5-7b/qwen25_cti_v1_grpo,qwen2.5-7b/qwen25_economics_v1,qwen2.5-7b/qwen25_finance_v1,qwen2.5-7b/qwen25_funccall_v1,qwen2.5-7b/qwen25_history_v1,qwen2.5-7b/qwen25_marketing_v1,qwen2.5-7b/qwen25_medicine_v1,qwen2.5-7b/qwen25_music_theory_v1,qwen2.5-7b/qwen25_philosophy_v1,qwen2.5-7b/qwen25_psychology_v1,qwen2.5-7b/qwen25_regex_v1,qwen2.5-7b/qwen25_sociology_v1,qwen2.5-7b/qwen25_theorem_v1_grpo,qwen2.5-7b/qwen25_verilog_v1,qwen2.5-7b/qwen25_dataframe_ds_v23_sft,qwen2.5-7b/qwen25_json_schema_v23_sft,qwen2.5-7b/qwen25_openapi_v23_sft}
       LORA_OUT_DIR: /loras
     volumes:
       - lora-cache:/loras
@@ -68,15 +71,44 @@ services:
       --host 0.0.0.0
       --port 8000
       --max-lora-rank 64
+      --max-loras 4
       --enable-lora
       --lora-modules
-      chemistry=/loras/qwen2.5-7b/qwen25_chem_v1_grpo
       sql=/loras/qwen2.5-7b/qwen25_sql_v1
+      cypher=/loras/qwen2.5-7b/qwen25_cypher_v1
+      bash=/loras/qwen2.5-7b/qwen25_bash_v1
+      sparql=/loras/qwen2.5-7b/qwen25_sparql_v1
+      mermaid=/loras/qwen2.5-7b/qwen25_mermaid_v1
+      pii=/loras/qwen2.5-7b/qwen25_pii_v1
+      quantum=/loras/qwen2.5-7b/qwen25_quantum_v1_grpo
+      legal=/loras/qwen2.5-7b/qwen25_legal_v1_grpo
+      chemistry=/loras/qwen2.5-7b/qwen25_chem_v1_grpo
+      reasoning=/loras/qwen2.5-7b/qwen25_reasoning_v1
+      astrophysics=/loras/qwen2.5-7b/qwen25_astrophysics_v1
+      biology=/loras/qwen2.5-7b/qwen25_biology_v1
+      caselaw=/loras/qwen2.5-7b/qwen25_case_law_v1
+      cti=/loras/qwen2.5-7b/qwen25_cti_v1_grpo
+      economics=/loras/qwen2.5-7b/qwen25_economics_v1
+      finance=/loras/qwen2.5-7b/qwen25_finance_v1
+      functioncall=/loras/qwen2.5-7b/qwen25_funccall_v1
+      history=/loras/qwen2.5-7b/qwen25_history_v1
+      marketing=/loras/qwen2.5-7b/qwen25_marketing_v1
+      medicine=/loras/qwen2.5-7b/qwen25_medicine_v1
+      musictheory=/loras/qwen2.5-7b/qwen25_music_theory_v1
+      philosophy=/loras/qwen2.5-7b/qwen25_philosophy_v1
+      psychology=/loras/qwen2.5-7b/qwen25_psychology_v1
+      regex=/loras/qwen2.5-7b/qwen25_regex_v1
+      sociology=/loras/qwen2.5-7b/qwen25_sociology_v1
+      theorem=/loras/qwen2.5-7b/qwen25_theorem_v1_grpo
+      verilog=/loras/qwen2.5-7b/qwen25_verilog_v1
+      dataframeds=/loras/qwen2.5-7b/qwen25_dataframe_ds_v23_sft
+      jsonschema=/loras/qwen2.5-7b/qwen25_json_schema_v23_sft
+      openapi=/loras/qwen2.5-7b/qwen25_openapi_v23_sft
     healthcheck:
       test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/v1/models', timeout=3)"]
       interval: 15s
       timeout: 5s
-      start_period: 600s   # vLLM cold start can be long
+      start_period: 900s   # 30-adapter cold start can be long
       retries: 3
 
   server:
@@ -86,12 +118,11 @@ services:
     container_name: am-server
     restart: unless-stopped
     ports:
-      # Override AM_SERVER_PORT in your .env if the default conflicts on
-      # your host (e.g. another local service already bound to 8765).
+      # Override AM_SERVER_PORT in your .env if 8765 conflicts on your host.
       - "${AM_SERVER_PORT:-8765}:8765"
     environment:
       VLLM_BASE: ${VLLM_BASE:-http://vllm:8000/v1}
-      AM_CATALOG: ${AM_CATALOG:-/app/catalogs/qwen25_smoke.yaml}
+      AM_CATALOG: ${AM_CATALOG:-/app/catalogs/qwen25_30.yaml}
     depends_on:
       vllm:
         condition: service_healthy
@@ -101,11 +132,11 @@ services:
       context: .
       dockerfile: docker/Dockerfile.ui
       args:
-        # The browser hits FastAPI directly (CORS is open on the server).
-        # Bake the host-facing URL in at build time. Override in .env if
-        # you've remapped AM_SERVER_PORT or you front the server with a
-        # reverse proxy.
-        NEXT_PUBLIC_AM_API_BASE: ${NEXT_PUBLIC_AM_API_BASE:-http://localhost:${AM_SERVER_PORT:-8765}}
+        # Empty → the UI bundle uses relative paths (`/api/am/*`), and the
+        # Next.js server proxies them to the `server` container over the
+        # compose network. Same image works for localhost, public IP, and
+        # reverse-proxy deployments — no rebuild on host change.
+        NEXT_PUBLIC_AM_API_BASE: ${NEXT_PUBLIC_AM_API_BASE:-}
         NEXT_PUBLIC_DEFAULT_MODE: ${NEXT_PUBLIC_DEFAULT_MODE:-router}
     container_name: am-ui
     restart: unless-stopped

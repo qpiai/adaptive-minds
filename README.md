@@ -55,15 +55,9 @@ cp .env.example .env             # then fill in HF_TOKEN
 docker compose up -d
 ```
 
-Wait for vLLM to download the base model + 2 smoke adapters (~5–15 min first time, watch `docker compose logs -f vllm`), then open **http://localhost:7007**.
+That's it. Wait for vLLM to download the base model + all 30 LoRA adapters (~15–30 min first time, watch `docker compose logs -f vllm`), then open **http://localhost:7007**. The browser talks to FastAPI through the Next.js proxy (`/api/am/*`), so the same stack works on localhost, a public IP, or behind a reverse proxy with no config changes.
 
-To run the full 30-adapter catalog instead of the 2-adapter smoke setup, edit `docker-compose.yml`'s `vllm` `--lora-modules` to match `catalogs/qwen25_30.yaml` and set `AM_CATALOG=/app/catalogs/qwen25_30.yaml` in `.env`. The helper
-
-```bash
-adaptive-minds serve --catalog catalogs/qwen25_30.yaml
-```
-
-prints the exact `vllm serve` line you need.
+For a faster first boot, swap to the 2-adapter smoke catalog: set `AM_CATALOG=/app/catalogs/qwen25_smoke.yaml` in `.env` and trim `docker-compose.yml`'s `vllm` `--lora-modules` to just `chemistry` + `sql`.
 
 ## 🐍 Quickstart (pip, against an existing vLLM)
 
