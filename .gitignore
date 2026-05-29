@@ -92,6 +92,13 @@ ui/out/
 ui/.env.local
 ui/next-env.d.ts
 
+# Remotion demo-video project: deps + render artefacts + the captured app
+# footage (regenerate via scripts/capture_demo.py → scripts/build_demo.sh).
+video/node_modules/
+video/out/
+video/public/app.mp4
+docs/.rec/
+
 # Re-allow the UI's typed API client; the broad `lib/` Python rule above
 # would otherwise swallow it (page.tsx imports from `@/lib/api`).
 !ui/src/lib/

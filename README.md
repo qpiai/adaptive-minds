@@ -20,7 +20,7 @@
 
 ![Adaptive Minds demo](docs/demo.gif)
 
-<sub><i>The Next.js chat UI driving all four modes — Router · Agent · Auto · LangGraph — over the same FastAPI / vLLM stack. ▶️ <b><a href="docs/demo.mp4">Watch the full-quality MP4</a></b>. Regenerate after <code>docker compose up -d</code> with <code>python scripts/capture_demo.py</code>.</i></sub>
+<sub><i>The Next.js chat UI driving all four modes — Router · Agent · Auto · LangGraph — over the same FastAPI / vLLM stack. ▶️ <b><a href="docs/demo.mp4">Watch the full-quality 1080p MP4</a></b> (branded intro + outro, built with Playwright + Remotion — see <a href="video/">video/</a>). Regenerate after <code>docker compose up -d</code> with <code>scripts/build_demo.sh</code>.</i></sub>
 
 ---
 
@@ -176,7 +176,9 @@ adaptive-minds/
 ├── training/            # shared SFT recipe + per-benchmark mapping
 ├── examples/            # python + curl quickstart scripts
 ├── docker/              # Dockerfile.server, Dockerfile.ui
-├── docs/                # ARCHITECTURE.md + screenshots
+├── docs/                # ARCHITECTURE.md + demo media
+├── video/              # Remotion intro/outro for the demo video
+├── scripts/             # capture_demo.py + build_demo.sh
 ├── tests/               # pytest, no GPU/network needed
 └── docker-compose.yml   # vllm + server + ui
 ```
