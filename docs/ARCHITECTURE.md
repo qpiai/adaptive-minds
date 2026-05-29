@@ -1,16 +1,51 @@
 # Architecture
 
-The runtime is intentionally thin. Three Python modules carry all the
-behaviour described in the paper:
+## Operating modes
+
+The framework exposes one base model + a library of LoRA adapters through
+four operating modes. Routing and agentic reasoning are two regimes of the
+*same* system, not separate codepaths.
+
+**🎯 Router** — one base-model call selects an expert from adapter metadata;
+that adapter answers. (§5.2)
+
+<div align="center"><img src="am_routing_v4.png" width="680" alt="Router: query → router agent → expert adapter → output"></div>
+
+**🤖 Agent** — a THOUGHT → CALL → OBSERVATION → FINAL loop that invokes LoRA
+experts *and* external tools across steps, then synthesises. (§5.4)
+
+<div align="center"><img src="agent_architecture_2.png" width="680" alt="Agent: Think → Select Tool → Observe → Iterate over a tool registry, then synthesise"></div>
+
+**🪄 Auto** — a cheap classifier picks Router vs. Agent per query and stamps
+the decision into the result. **🕸️ LangGraph** — the agent loop as a
+`StateGraph`. Both are shown in the unified diagram below. (§5.5)
+
+<div align="center"><img src="auto_mode_arch.png" width="760" alt="Unified modes: classifier dispatches to single-step routing or a multi-step agent over a shared tool registry"></div>
+
+## Modules
+
+The runtime is intentionally thin — every public function has a docstring
+that says *why* it exists:
 
 | File                                   | Paper section | Purpose |
 |----------------------------------------|---------------|---------|
 | `adaptive_minds/router.py`             | §5.2          | Single-step routing |
 | `adaptive_minds/agent.py`              | §5.4          | Multi-step ReAct loop |
+| `adaptive_minds/auto.py`               | §5.5          | Router-vs-agent dispatcher (heuristic) |
+| `adaptive_minds/langgraph_agent.py`    | §5.4          | Agent loop as a `langgraph.StateGraph` |
 | `adaptive_minds/common.py`             | §5.3          | vLLM HTTP client + `Adapter` dataclass |
 | `adaptive_minds/catalog.py`            | §4 + §5.3     | YAML loader + `vllm serve` arg builder |
 | `adaptive_minds/tools.py`              | §5.4          | External tool registry (5 tools) |
 | `adaptive_minds/external_tools.py`     | §5.4          | Sandboxed tool handlers |
+| `adaptive_minds/server.py`             | —             | FastAPI surface (`/route` `/agent` `/chat` …) |
+| `adaptive_minds/cli.py`                | —             | `serve` / `server` / `route` / `agent` / `list` |
+
+The serving topology is flat: the **Next.js UI** (port 7007) calls the
+**FastAPI server**, which holds no model weights and forwards every
+inference over HTTP to a single **vLLM** engine that serves the base model
+plus all LoRA adapters by name. Browser → API goes through the Next.js
+proxy (`/api/am/*`), so the same image works on localhost, a public IP, or
+behind a reverse proxy.
 
 ## The catalog YAML drives everything
 
@@ -92,6 +127,37 @@ The runtime:
 
 The same loop covers both directly-routed cases (one CALL + one FINAL =
 routing in another form) and multi-tool reasoning.
+
+## Auto (mode dispatch, §5.5)
+
+`run_auto(query, catalog, cfg, ...)` calls `needs_agent(query)` and then
+delegates to `run_router` or `run_agent`, stamping the chosen mode and a
+one-word `reason` into the result so the UI can show *why*. The paper
+motivates an entropy-gated classifier — H(Q) over the base model's first
+16 tokens, `H < 0.8 → Router`, `H > 1.5 → Agent` — but v0.1 ships a cheap
+heuristic instead (operators, sequencing words, length, multi-sentence →
+Agent; otherwise Router), avoiding a second model call. The hook is in
+place to swap in the entropy gate later without changing callers.
+
+## LangGraph (StateGraph form, §5.4)
+
+`langgraph_agent.py` expresses the *same* agent loop as a
+`langgraph.StateGraph` with three nodes — **plan → dispatch → synthesise** —
+reusing `agent.py`'s `_dispatch_call` and prompt:
+
+```
+START → plan
+plan → dispatch        (CALL emitted)
+plan → END             (FINAL emitted)
+dispatch → plan        (step budget remaining)
+dispatch → synthesise  (budget exhausted)
+synthesise → END
+```
+
+Behaviour matches the imperative agent; the value is observability — each
+run is a sequence of node visits you can trace or drop into an existing
+LangGraph pipeline. `langgraph` ships in the `[serve]` extra; the
+imperative `agent.py` works without it.
 
 ## Why the two stops are exactly those
 
