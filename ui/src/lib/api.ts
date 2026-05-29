@@ -3,8 +3,10 @@
 // the docker network (see next.config.mjs rewrites). Override
 // NEXT_PUBLIC_AM_API_BASE to point at FastAPI directly.
 
+// Use `||` not `??` so an empty-string build arg (Docker's default ARG
+// value) falls back to the proxy path; `??` would leak `""` through.
 export const API_BASE =
-  process.env.NEXT_PUBLIC_AM_API_BASE ?? "/api/am";
+  process.env.NEXT_PUBLIC_AM_API_BASE || "/api/am";
 
 export type Adapter = {
   id: string;
