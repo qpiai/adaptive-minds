@@ -2,7 +2,7 @@
 
 # 🧠 Adaptive Minds
 
-### LoRA adapters as callable tools for one base model
+### Empowering Agents with LoRA-as-Tools
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/downloads/)
@@ -125,17 +125,31 @@ print(r["adapter_id"], "→", r["response"])
 
 > **The shortest path to understanding**: read [`nanoam.py`](nanoam.py) (≤300 lines). It's the whole framework — catalog loader, vLLM client, router, agent loop, two tool handlers, `__main__` — in one file with stdlib + `requests` + `PyYAML`. The `adaptive_minds/` package is the same shape with FastAPI, sandboxed tools, evals, and Docker wrapped around it.
 
-```
-┌──────────────┐    ┌───────────────┐    ┌────────────────────────────┐
-│  Next.js UI  │ ─▶ │  FastAPI      │ ─▶ │  vLLM (OpenAI /v1)         │
-│  ui/         │    │  /chat /route │    │  base model                │
-│  (port 7007) │    │  /agent       │    │  + LoRA adapters by name   │
-└──────────────┘    └───────────────┘    └────────────────────────────┘
-                            │
-                            ├─ run_router      ── single-step semantic routing (paper §5.2)
-                            ├─ run_agent       ── ReAct loop with adapters+tools (paper §5.4)
-                            ├─ run_auto        ── heuristic dispatcher: router vs agent
-                            └─ langgraph_agent ── StateGraph (plan → dispatch → synthesise)
+```mermaid
+flowchart LR
+    user(["🧑 User query"]) --> ui["🖥️ Next.js UI<br/>port 7007"]
+    ui -->|"HTTP · /api/am/*"| api["⚙️ FastAPI server<br/>/route · /agent · /chat"]
+
+    subgraph modes["🧭 Orchestration modes (pure Python)"]
+        direction TB
+        router["🎯 Router<br/>1 call → pick adapter"]
+        agent["🤖 Agent<br/>ReAct: THOUGHT/CALL/FINAL"]
+        auto["🪄 Auto<br/>route vs. agent heuristic"]
+        lang["🕸️ LangGraph<br/>plan → dispatch → synthesise"]
+    end
+
+    api --> modes
+    modes --> vllm["🧠 vLLM · OpenAI /v1<br/>base model + LoRA adapters by name"]
+    agent -.->|"CALL"| tools["🛠️ External tools<br/>calculator · code · shell · web · LP"]
+    catalog[/"📄 YAML catalog"/] -.->|"single source of truth"| api
+    catalog -.-> vllm
+
+    classDef core fill:#eef2ff,stroke:#6366f1,stroke-width:1px,color:#3730a3;
+    classDef brain fill:#ecfdf5,stroke:#10b981,stroke-width:1px,color:#065f46;
+    classDef tool fill:#fff7ed,stroke:#f59e0b,stroke-width:1px,color:#92400e;
+    class ui,api core;
+    class router,agent,auto,lang,vllm brain;
+    class tools,catalog tool;
 ```
 
 - **Single source of truth**: one YAML catalog drives both the `vllm serve` launch command and the runtime's adapter selection.
