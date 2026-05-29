@@ -59,6 +59,8 @@ const SAMPLES: Record<ChatMode, string[]> = {
   ],
 };
 
+const STORAGE_KEY = "am-chat-v1";
+
 // ---------- helpers ---------------------------------------------------------
 
 function formatElapsed(s?: number): string {
@@ -205,6 +207,28 @@ function StepChip({ step }: { step: Step }) {
   );
 }
 
+// ---------- copy-to-clipboard ----------------------------------------------
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const onCopy = useCallback(() => {
+    if (!text) return;
+    void navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1400);
+    });
+  }, [text]);
+  return (
+    <button
+      onClick={onCopy}
+      className="rounded-md border border-neutral-700/70 bg-neutral-900/60 px-2 py-0.5 text-[11px] text-neutral-300 hover:border-neutral-500 hover:text-neutral-100"
+      title="Copy response"
+    >
+      {copied ? "✓ copied" : "⧉ copy"}
+    </button>
+  );
+}
+
 // ---------- assistant turn -------------------------------------------------
 
 function AssistantBubble({ turn }: { turn: Extract<Turn, { role: "assistant" }> }) {
@@ -233,6 +257,11 @@ function AssistantBubble({ turn }: { turn: Extract<Turn, { role: "assistant" }> 
         {r.elapsed != null && (
           <span className="rounded-full border border-neutral-700 bg-neutral-900/70 px-2 py-0.5 text-neutral-400">
             {formatElapsed(r.elapsed)}
+          </span>
+        )}
+        {ok && (
+          <span className="ml-auto">
+            <CopyButton text={r.response ?? ""} />
           </span>
         )}
       </div>
@@ -280,11 +309,34 @@ export default function Page() {
   );
   const [query, setQuery] = useState("");
   const [chat, setChat] = useState<Turn[]>([]);
+  const [hydrated, setHydrated] = useState(false);
   const [adapters, setAdapters] = useState<Adapter[]>([]);
   const [healthy, setHealthy] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
   const endRef = useRef<HTMLDivElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  // Hydrate persisted chat once on mount; guarded so we don't write back
+  // an empty array before we've read.
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Turn[];
+        if (Array.isArray(parsed)) setChat(parsed);
+      }
+    } catch {/* ignore corrupt storage */}
+    setHydrated(true);
+  }, []);
+
+  // Persist after every chat change (post-hydration to avoid wipe-on-load).
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(chat));
+    } catch {/* quota / private-mode — ignore */}
+  }, [chat, hydrated]);
 
   useEffect(() => {
     Promise.all([api.health(), api.adapters()])
@@ -294,7 +346,16 @@ export default function Page() {
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [chat]);
+  }, [chat, running]);
+
+  // Auto-grow the textarea up to ~10 lines, then scroll.
+  const resizeTextarea = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 240) + "px";
+  }, []);
+  useEffect(resizeTextarea, [query, resizeTextarea]);
 
   const onSubmit = useCallback(async () => {
     const q = query.trim();
@@ -313,15 +374,24 @@ export default function Page() {
       }]);
     } finally {
       setRunning(false);
+      textareaRef.current?.focus();
     }
   }, [query, mode, running]);
 
+  // ChatGPT-style: Enter sends, Shift+Enter newline. `isComposing` guards
+  // against submitting mid-IME composition (Japanese / Chinese / Korean).
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       void onSubmit();
     }
   };
+
+  const onClear = useCallback(() => {
+    if (chat.length === 0) return;
+    if (!window.confirm("Clear all chat history?")) return;
+    setChat([]);
+  }, [chat.length]);
 
   const activeMode = MODES.find((m) => m.id === mode)!;
 
@@ -341,18 +411,28 @@ export default function Page() {
             </p>
           </div>
         </div>
-        <span
-          className={
-            "rounded-full px-2 py-1 text-[11px] " +
-            (healthy === true
-              ? "bg-emerald-900/40 text-emerald-300"
-              : healthy === false
-              ? "bg-rose-900/40 text-rose-300"
-              : "bg-neutral-800 text-neutral-400")
-          }
-        >
-          {healthy === true ? "● online" : healthy === false ? "● offline" : "● …"}
-        </span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onClear}
+            disabled={chat.length === 0}
+            className="rounded-lg border border-neutral-700 bg-neutral-900/60 px-2.5 py-1 text-[11px] text-neutral-300 transition hover:border-rose-700/60 hover:bg-rose-950/30 hover:text-rose-200 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-neutral-700 disabled:hover:bg-neutral-900/60 disabled:hover:text-neutral-300"
+            title="Clear chat history"
+          >
+            🗑 Clear
+          </button>
+          <span
+            className={
+              "rounded-full px-2 py-1 text-[11px] " +
+              (healthy === true
+                ? "bg-emerald-900/40 text-emerald-300"
+                : healthy === false
+                ? "bg-rose-900/40 text-rose-300"
+                : "bg-neutral-800 text-neutral-400")
+            }
+          >
+            {healthy === true ? "● online" : healthy === false ? "● offline" : "● …"}
+          </span>
+        </div>
       </header>
 
       {/* MODE TABS */}
@@ -372,7 +452,7 @@ export default function Page() {
             {m.label}
           </button>
         ))}
-        <div className="ml-3 text-[11px] text-neutral-500">{activeMode.blurb}</div>
+        <div className="ml-3 hidden text-[11px] text-neutral-500 md:block">{activeMode.blurb}</div>
       </nav>
 
       {/* BODY */}
@@ -395,8 +475,9 @@ export default function Page() {
               </div>
             ))}
           </div>
-          <div className="shrink-0 border-t border-neutral-800/80 p-3 text-[10px] text-neutral-500">
-            Pick a mode above. Cmd/Ctrl + ↵ to send.
+          <div className="shrink-0 border-t border-neutral-800/80 p-3 text-[10px] leading-relaxed text-neutral-500">
+            <div>↵ to send · Shift + ↵ for newline</div>
+            <div className="mt-1">History persists locally.</div>
           </div>
         </aside>
 
@@ -404,16 +485,27 @@ export default function Page() {
         <section className="panel flex min-h-0 flex-col overflow-hidden">
           <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
             {chat.length === 0 && (
-              <div className="space-y-2 text-xs text-neutral-400">
-                <p>Try one of these in <b className="text-neutral-200">{activeMode.label}</b> mode:</p>
-                <div className="flex flex-wrap gap-1.5">
+              <div className="mx-auto flex h-full max-w-xl flex-col items-center justify-center gap-4 text-center">
+                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-emerald-500 via-sky-500 to-violet-500 text-2xl shadow-lg shadow-emerald-500/10">
+                  🧠
+                </div>
+                <div>
+                  <h2 className="text-base font-semibold text-neutral-100">
+                    Adaptive Minds — {activeMode.label} mode
+                  </h2>
+                  <p className="mt-1 text-xs text-neutral-400">{activeMode.blurb}</p>
+                </div>
+                <div className="flex w-full flex-col gap-1.5">
                   {SAMPLES[mode].map((s) => (
                     <button
                       key={s}
-                      onClick={() => setQuery(s)}
-                      className="rounded-full border border-neutral-700 bg-neutral-900/70 px-2 py-0.5 text-[11px] hover:border-neutral-500"
+                      onClick={() => {
+                        setQuery(s);
+                        textareaRef.current?.focus();
+                      }}
+                      className="rounded-lg border border-neutral-800 bg-neutral-900/50 px-3 py-2 text-left text-xs text-neutral-200 transition hover:border-emerald-700/60 hover:bg-neutral-900"
                     >
-                      {s.length > 60 ? s.slice(0, 60) + "…" : s}
+                      {s}
                     </button>
                   ))}
                 </div>
@@ -423,16 +515,16 @@ export default function Page() {
               {chat.map((t, i) =>
                 t.role === "user" ? (
                   <motion.div
-                    key={`u-${i}`}
+                    key={`u-${t.ts}-${i}`}
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="ml-auto max-w-3xl rounded-2xl border border-sky-700/60 bg-sky-950/30 px-4 py-2 text-sm text-sky-100"
+                    className="ml-auto max-w-3xl whitespace-pre-wrap rounded-2xl border border-sky-700/60 bg-sky-950/30 px-4 py-2 text-sm text-sky-100"
                   >
                     {t.content}
                   </motion.div>
                 ) : (
                   <motion.div
-                    key={`a-${i}`}
+                    key={`a-${t.ts}-${i}`}
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                   >
@@ -451,21 +543,31 @@ export default function Page() {
           </div>
 
           <div className="shrink-0 border-t border-neutral-800/80 p-3">
-            <div className="flex items-end gap-2">
+            <div className="flex items-end gap-2 rounded-2xl border border-neutral-700 bg-neutral-900 p-2 focus-within:border-emerald-600/70 focus-within:ring-1 focus-within:ring-emerald-600/30">
               <textarea
+                ref={textareaRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={onKeyDown}
-                placeholder={`Ask in ${activeMode.label} mode. Cmd/Ctrl + ↵ to send.`}
-                className="h-20 w-full resize-y rounded-lg border border-neutral-700 bg-neutral-900 p-2 text-sm focus:border-emerald-500 focus:outline-none"
+                placeholder={`Message Adaptive Minds (${activeMode.label} mode)…`}
+                rows={1}
+                className="min-h-[28px] w-full resize-none bg-transparent px-1 text-sm leading-relaxed text-neutral-100 placeholder:text-neutral-500 focus:outline-none"
               />
               <button
                 onClick={() => void onSubmit()}
                 disabled={!query.trim() || running}
-                className="h-20 shrink-0 rounded-lg border border-emerald-700/70 bg-gradient-to-br from-emerald-700/40 to-sky-700/40 px-4 text-sm font-semibold text-emerald-100 hover:from-emerald-600/50 hover:to-sky-600/50 disabled:opacity-50"
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-emerald-600 to-sky-600 text-base text-white shadow-sm transition hover:from-emerald-500 hover:to-sky-500 disabled:cursor-not-allowed disabled:opacity-40"
+                title="Send (Enter)"
               >
-                {running ? "…" : "Send"}
+                {running ? (
+                  <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                ) : (
+                  <span>↑</span>
+                )}
               </button>
+            </div>
+            <div className="mt-1.5 px-1 text-[10px] text-neutral-500">
+              ↵ send · Shift + ↵ newline · responses can be inaccurate, verify important info.
             </div>
           </div>
         </section>
