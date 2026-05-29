@@ -20,11 +20,11 @@
 
 <div align="center">
 
-<a href="https://github.com/user-attachments/assets/5764c7d7-16fb-47d2-9a73-6bb041757f4e">
+<a href="docs/demo.mp4">
   <img src="docs/demo.gif" alt="Adaptive Minds demo — Router → LangGraph over the live 30-adapter stack" width="860">
 </a>
 
-<a href="https://github.com/user-attachments/assets/5764c7d7-16fb-47d2-9a73-6bb041757f4e">
+<a href="docs/demo.mp4">
   <img src="https://img.shields.io/badge/▶_Watch_the_full_demo-with_sound-6366f1?style=for-the-badge&logo=youtube&logoColor=white" alt="Watch the full demo with sound">
 </a>
 
