@@ -35,19 +35,19 @@ APP_MP4 = ROOT / "video" / "public" / "app.mp4"
 DOCS.mkdir(parents=True, exist_ok=True)
 APP_MP4.parent.mkdir(parents=True, exist_ok=True)
 
-# Lay the app out at a smaller viewport (bigger UI elements) but record at
-# 1080p so the footage is zoomed-in yet crisp. device_scale_factor=2 keeps
-# text sharp. Both are 16:9 → no crop when Remotion places it full-frame.
-VIEW_W = int(os.environ.get("AM_VIEW_W", "1440"))
-VIEW_H = int(os.environ.get("AM_VIEW_H", "810"))
-REC_W, REC_H = 1920, 1080
+# Capture size MUST equal record_video_size, otherwise Playwright pins the page
+# to the top-left of a larger frame (leaving blank margins) — it only scales
+# DOWN to fit, never up. We lay out at a smaller 16:9 viewport so the UI reads
+# big (zoomed-in), then lanczos-upscale to 1080p in ffmpeg so Remotion uses the
+# footage 1:1 and it fills the whole frame. device_scale_factor=2 keeps it crisp.
+CAP_W = int(os.environ.get("AM_CAP_W", "1280"))
+CAP_H = int(os.environ.get("AM_CAP_H", "720"))
+OUT_W, OUT_H = 1920, 1080
 
 # (mode label, query, whether to expand the trace afterwards)
+# Short, punchy demo: a simple route, then a multi-step LangGraph run.
 SCRIPT: list[tuple[str, str, bool]] = [
-    ("Router", "What is the molecular formula of caffeine?", False),
     ("Router", "Top 5 customers by total revenue — write the SQL.", False),
-    ("Agent", "Compute 2**16 + 17, then explain that figure as a finance metric.", True),
-    ("Auto", "What is the capital of France?", False),
     ("LangGraph", "Find the SMILES for caffeine, then summarise its pharmacology.", True),
 ]
 
@@ -97,10 +97,10 @@ def main() -> int:
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(
-            viewport={"width": VIEW_W, "height": VIEW_H},
+            viewport={"width": CAP_W, "height": CAP_H},
             device_scale_factor=2,
             record_video_dir=str(record_dir),
-            record_video_size={"width": REC_W, "height": REC_H},
+            record_video_size={"width": CAP_W, "height": CAP_H},
         )
         # Capture in LIGHT mode (the no-flash script reads this on load).
         context.add_init_script(
@@ -121,6 +121,17 @@ def main() -> int:
                 print(f"  → {DOCS / 'screenshot.png'}", flush=True)
                 hero_taken = True
 
+        # Never ship a demo with a transient server error baked in.
+        body = page.inner_text("body")
+        bad = next((m for m in ("Internal Server Error", "Failed to fetch",
+                                "(no response)") if m in body), None)
+        if bad:
+            context.close()
+            browser.close()
+            print(f"ERROR: a response errored during capture ({bad!r}); "
+                  "re-run the capture.", file=sys.stderr)
+            return 2
+
         time.sleep(1.0)
         context.close()                  # finalises the .webm
         browser.close()
@@ -138,7 +149,7 @@ def main() -> int:
     print(f"[capture_demo] ffmpeg → {APP_MP4}", flush=True)
     subprocess.run([
         "ffmpeg", "-y", "-i", str(webm),
-        "-vf", f"scale={REC_W}:{REC_H}:flags=lanczos,fps=30",
+        "-vf", f"scale={OUT_W}:{OUT_H}:flags=lanczos,fps=30",
         "-c:v", "libx264", "-crf", "18", "-preset", "medium",
         "-pix_fmt", "yuv420p", "-movflags", "+faststart",
         str(APP_MP4),
