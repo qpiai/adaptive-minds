@@ -18,17 +18,17 @@
 
 ---
 
+<!-- Inline player with audio (uploaded to issue #1; GitHub renders it as a video). -->
+
+https://github.com/user-attachments/assets/45a8f228-dac0-4f77-8a89-93d03a697d06
+
 <div align="center">
 
-<a href="docs/demo.mp4">
-  <img src="docs/demo.gif" alt="Adaptive Minds demo — Router → LangGraph over the live 30-adapter stack" width="860">
-</a>
-
-<a href="docs/demo.mp4">
+<a href="https://github.com/user-attachments/assets/45a8f228-dac0-4f77-8a89-93d03a697d06">
   <img src="https://img.shields.io/badge/▶_Watch_the_full_demo-with_sound-6366f1?style=for-the-badge&logo=youtube&logoColor=white" alt="Watch the full demo with sound">
 </a>
 
-<sub><i>Silent GIF preview above · click for the 1080p tour <b>with audio</b> (branded intro + outro, built with Playwright + Remotion — see <a href="video/">video/</a>). Regenerate after <code>docker compose up -d</code> with <code>scripts/build_demo.sh</code>.</i></sub>
+<sub><i><b>60-second tour with sound</b> — Router → LangGraph over the live 30-adapter stack. Prefer a silent GIF? See <a href="docs/demo.gif">docs/demo.gif</a>. Built with Playwright + Remotion (see <a href="video/">video/</a>); rebuild with <code>scripts/build_demo.sh</code>.</i></sub>
 
 </div>
 
