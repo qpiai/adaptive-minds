@@ -28,6 +28,8 @@ https://github.com/user-attachments/assets/45a8f228-dac0-4f77-8a89-93d03a697d06
 
 ## What is this?
 
+> **Adapters are tools — and like any tool, the quality of each one matters enormously.** Train good adapters, and the framework takes care of the rest: discovering them, picking the right one(s) for each query, and composing them into an answer. Better adapters strictly help; weak ones simply don't get selected.
+
 Two of the most useful ideas in modern LLMs have lived in separate worlds: **parameter-efficient specialization** (LoRA adapters that make a base model great at one domain) and **tool-augmented agents** (models that reason by calling tools). **Adaptive Minds unifies them** — it treats each LoRA adapter as a *named, callable tool* and lets the base model decide **which** adapter to use, **when**, **how often**, and **in what order**.
 
 Instead of merging LoRAs into one weight blend, every adapter stays a distinct, inspectable tool served by a **single vLLM engine**. The base model orchestrates them — in one call (**Router**) or across a multi-step reasoning loop that can also reach external tools (**Agent**). Because every adapter call is an explicit, named action, you get an **auditable trace** of how the answer was produced — something parameter-merging can't give you.
@@ -233,17 +235,17 @@ adaptive-minds/
 
 ## 🗺 Roadmap
 
-Intentionally out of v0.1 to keep the public surface minimal:
+The big questions we'd love to push on next — contributions and ideas are very welcome 🙏:
 
-- **SSE streaming** in the UI (server already structured for it).
-- **PEFT-backed in-process runtime** for single-GPU deployments.
-- **Per-benchmark GRPO recipes** (legal / chemistry / quantum use GRPO stage-2 in the paper).
-- **Train-as-a-tool action** — let the agent commission a new specialist when none matches the task.
-- **Adapter-fusion experiments** (paper §3.3 contrast with LoRA Soups).
+- **🧩 Adapters as truly first-class tools.** Make the agent reach for adapters as naturally as any other tool — including *train-as-a-tool*: when no existing specialist fits, commission and train a new one on the fly, then route to it.
+- **📈 Scale to hundreds → thousands of adapters.** Our study covers 30; we want to learn how reliably model-driven routing holds as the library grows large and the boundaries blur — and what indexing / retrieval the router needs at that scale.
+- **🎓 Better ways to train the adapters.** Quality is the multiplier, so finding the data, recipes, and evaluation that reliably produce strong specialists is where most of the leverage is.
+
+Smaller, practical items: SSE streaming in the UI · a PEFT-backed in-process runtime for single-GPU setups · adapter-fusion experiments (paper §3.3, vs. LoRA Soups).
 
 ## 🤝 Contributing
 
-PRs welcome — see [`CONTRIBUTING.md`](CONTRIBUTING.md) for setup, testing, and what we will / won't merge.
+PRs, issues, and ideas are very welcome — thank you for helping make this better! Please see [`CONTRIBUTING.md`](CONTRIBUTING.md) for setup, testing, and what we will / won't merge.
 
 ## 📚 Citation
 
@@ -262,6 +264,10 @@ If you use this work, please cite the paper:
   url    = {https://arxiv.org/abs/2510.15416}
 }
 ```
+
+## 🙏 Acknowledgements
+
+Adaptive Minds stands on the shoulders of wonderful open source — [vLLM](https://github.com/vllm-project/vllm) for multi-LoRA serving, [Hugging Face](https://huggingface.co/) for the model + adapter hub, [LangGraph](https://github.com/langchain-ai/langgraph) for the state-graph mode, and Next.js + Tailwind for the UI. Thank you to everyone building these. And thank *you* for taking the time to look at this project — if it's useful to you, we'd genuinely love to hear about it.
 
 ## 📄 License
 
