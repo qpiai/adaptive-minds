@@ -53,6 +53,10 @@ base_model/
 loras/
 models/
 
+# Eval / training artefacts
+evals/results/
+training/loras/
+
 # Logs
 *.log
 logs/
@@ -69,7 +73,37 @@ temp/
 .pytest_cache/
 .coverage
 
+# ruff
+.ruff_cache/
+
 # mypy
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
+# Session-private files (not committed)
+OSS_SESSION_LOG.md
+.battle_test/
+
+# Next.js UI build artefacts (Docker builds these inside the container)
+ui/node_modules/
+ui/.next/
+ui/out/
+ui/.env.local
+ui/next-env.d.ts
+
+# Remotion demo-video project: deps + render artefacts + the captured app
+# footage (regenerate via scripts/capture_demo.py → scripts/build_demo.sh).
+video/node_modules/
+video/out/
+video/public/app.mp4
+video/public/bgm.mp3
+# Raw BGM track is not redistributed (licensing) — the rendered docs/demo.mp4
+# carries the music; supply your own docs/bgm.mp3 to re-render.
+docs/bgm.mp3
+docs/.rec/
+
+# Re-allow the UI's typed API client; the broad `lib/` Python rule above
+# would otherwise swallow it (page.tsx imports from `@/lib/api`).
+!ui/src/lib/
+!ui/src/lib/**

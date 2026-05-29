@@ -1,0 +1,53 @@
+# Multi-stage Node build for the Next.js chat UI (replaces the v0.1
+# Streamlit app shipped at bee4715). The Streamlit deps are no longer
+# required to run the UI.
+#
+# Stage 1 (builder): install deps + `next build` with output:standalone.
+# Stage 2 (runner):  copy the standalone bundle + minimal node_modules.
+#
+# Standalone output keeps the runtime image small — the full node_modules
+# stays in the builder stage and is dropped from the final image.
+
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+LABEL org.opencontainers.image.title="adaptive-minds-ui"
+LABEL org.opencontainers.image.source="https://github.com/qpiai/adaptive-minds"
+
+# Install deps from lockfile if present; fall back to a clean install.
+COPY ui/package.json ui/package-lock.json* ./
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+# NEXT_PUBLIC_AM_API_BASE is baked at build time. Empty (the default) →
+# the UI uses relative `/api/am/*` paths and the Next.js server proxies
+# to the `server` container over the docker network. Set it explicitly
+# only to bypass the proxy (e.g. UI hosted separately from FastAPI).
+ARG NEXT_PUBLIC_AM_API_BASE=
+ENV NEXT_PUBLIC_AM_API_BASE=$NEXT_PUBLIC_AM_API_BASE
+ARG NEXT_PUBLIC_DEFAULT_MODE=router
+ENV NEXT_PUBLIC_DEFAULT_MODE=$NEXT_PUBLIC_DEFAULT_MODE
+
+COPY ui/ ./
+RUN npm run build
+
+# ---------------------------------------------------------------------------
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    PORT=7007 \
+    HOSTNAME=0.0.0.0
+
+# Standalone output: .next/standalone/ has the minimal server.js + needed
+# node_modules; .next/static/ ships separately.
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
+
+EXPOSE 7007
+
+HEALTHCHECK --interval=15s --timeout=4s --start-period=20s --retries=3 \
+    CMD wget -q -O- http://localhost:7007 > /dev/null || exit 1
+
+CMD ["node", "server.js"]

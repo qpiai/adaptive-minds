@@ -1,53 +1,79 @@
 [project]
 name = "adaptive-minds"
-version = "1.0.0"
-description = "AI-Powered Multi-Agent System with Intelligent Domain Routing"
+version = "0.1.0"
+description = "LoRA adapters as callable tools for agent orchestration."
 authors = [
-    {name = "Adaptive Minds Team"}
+    { name = "Pavan C Shekar", email = "pavan.s@qpiai.tech" },
+    { name = "Aswanth Krishnan", email = "Aswanth.krishnan@qpiai.tech" },
 ]
 readme = "README.md"
-license = {file = "LICENSE"}
+license = { file = "LICENSE" }
 requires-python = ">=3.10"
+keywords = ["lora", "agents", "react", "vllm", "peft", "routing"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = [
-    "fastapi>=0.68.0",
-    "pydantic>=1.8.0",
-    "torch>=2.0.0",
-    "transformers>=4.30.0",
-    "peft>=0.5.0",
-    "langgraph>=0.0.10",
-    "uvicorn>=0.15.0",
-    "boto3>=1.26.0",
-    "botocore>=1.29.0",
-    "huggingface_hub>=0.16.0",
-    "streamlit>=1.28.0",
-    "requests>=2.25.0",
-    "datasets>=2.14.0",
-    "trl>=0.7.0",
-    "accelerate>=0.24.0",
-    "bitsandbytes>=0.41.0"
+    "requests>=2.31",
+    "pyyaml>=6",
+    "typer>=0.12",
+    "huggingface_hub>=0.24",
 ]
 
 [project.optional-dependencies]
 training = [
-    "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git",
-    "wandb>=0.16.0",
-    "xformers>=0.0.22"
+    "torch>=2.4",
+    "transformers>=4.46",
+    "peft>=0.13",
+    "trl>=0.11",
+    "datasets>=2.20",
+    "accelerate>=0.30",
 ]
+serve = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+    "pydantic>=2.0",
+    # LangGraph backs the /chat?mode=langgraph endpoint. Pure-python install;
+    # the imperative agent.py works without it.
+    "langgraph>=0.2",
+]
+# The chat UI is a Next.js app under `ui/` — built and served via
+# `docker compose up -d` (the `ui` service uses docker/Dockerfile.ui)
+# or `cd ui && npm install && npm run dev` for local development.
+# No Python-side UI dependency.
+vllm = [
+    "vllm>=0.6.3",
+]
+evals = [
+    "datasets>=2.20",
+]
+tools = [
+    "sympy>=1.13",
+    "ddgs>=6.0",
+    "pulp>=2.8",
+]
+dev = [
+    "pytest>=8",
+    "httpx>=0.27",
+    "ruff>=0.6",
+]
+
+[project.scripts]
+adaptive-minds = "adaptive_minds.cli:app"
 
 [project.urls]
 Repository = "https://github.com/qpiai/adaptive-minds"
-Documentation = "https://github.com/qpiai/adaptive-minds#readme"
-
-[project.scripts]
-adaptive-minds-server = "playground.server:main"
-adaptive-minds-download = "playground.download_models:main"
-
-[tool.hatch.build.targets.wheel]
-packages = ["build", "playground", "examples"]
-
-[tool.hatch.metadata]
-allow-direct-references = true
+Adapters = "https://huggingface.co/pavan01729/adaptive-minds-loras"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["adaptive_minds"]

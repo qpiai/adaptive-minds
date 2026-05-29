@@ -1,0 +1,151 @@
+{"id": "route_pii_v1_00", "query": "Please redact all PII from this customer email body and return the redacted text.", "expected_adapter": "pii"}
+{"id": "route_pii_v1_01", "query": "Anonymize this conversation log: 'Hi I'm Jane Doe, jane@example.com'", "expected_adapter": "pii"}
+{"id": "route_pii_v1_02", "query": "Mask any personally identifiable information in the following document.", "expected_adapter": "pii"}
+{"id": "route_pii_v1_03", "query": "Replace names, emails, and phone numbers with placeholder labels.", "expected_adapter": "pii"}
+{"id": "route_pii_v1_04", "query": "I need to scrub sensitive information from these chat transcripts before sharing.", "expected_adapter": "pii"}
+{"id": "route_pii_v1_05", "query": "Detect and remove SSN, credit card, and address spans from this text.", "expected_adapter": "pii"}
+{"id": "route_pii_v1_06", "query": "Apply PII redaction so that the user's identity is no longer recoverable.", "expected_adapter": "pii"}
+{"id": "route_pii_v1_07", "query": "Strip out emails and phone numbers from this support ticket transcript.", "expected_adapter": "pii"}
+{"id": "route_pii_v1_08", "query": "Return this paragraph with all personally identifiable info masked as [LABEL].", "expected_adapter": "pii"}
+{"id": "route_pii_v1_09", "query": "Sanitize this clinical note by replacing patient names with [PERSON].", "expected_adapter": "pii"}
+{"id": "route_pii_v1_10", "query": "Hide the user's IP address and email in this access log line.", "expected_adapter": "pii"}
+{"id": "route_pii_v1_11", "query": "Remove the credit card number and CVV from this receipt.", "expected_adapter": "pii"}
+{"id": "route_pii_v1_12", "query": "Anonymize this list of leads \u2014 keep the company but mask names + phones.", "expected_adapter": "pii"}
+{"id": "route_pii_v1_13", "query": "Identify all PII spans in this paragraph and replace them with type tags.", "expected_adapter": "pii"}
+{"id": "route_pii_v1_14", "query": "Replace passport numbers and birthdates with [ID] and [DATE].", "expected_adapter": "pii"}
+{"id": "route_pii_v1_15", "query": "I need to mask all personal info in this chat log for compliance review.", "expected_adapter": "pii"}
+{"id": "route_funccall_v1_00", "query": "Given the available functions, call the right one to fetch the weather in Tokyo.", "expected_adapter": "functioncall"}
+{"id": "route_funccall_v1_01", "query": "Make a function call to search the catalog for blue running shoes size 10.", "expected_adapter": "functioncall"}
+{"id": "route_funccall_v1_02", "query": "Invoke the appropriate API to retrieve user 12345's order history.", "expected_adapter": "functioncall"}
+{"id": "route_funccall_v1_03", "query": "Pick the right tool and call it: get the current stock price of AAPL.", "expected_adapter": "functioncall"}
+{"id": "route_funccall_v1_04", "query": "Call a function to schedule a meeting tomorrow at 3pm with John.", "expected_adapter": "functioncall"}
+{"id": "route_funccall_v1_05", "query": "Tool call: send an email to alice@x.com with subject 'Status update'.", "expected_adapter": "functioncall"}
+{"id": "route_funccall_v1_06", "query": "Use the available functions to add 'milk' and 'eggs' to my shopping list.", "expected_adapter": "functioncall"}
+{"id": "route_funccall_v1_07", "query": "Make the API call to translate 'hello world' from English to French.", "expected_adapter": "functioncall"}
+{"id": "route_funccall_v1_08", "query": "Call the right function to get my GitHub starred repositories.", "expected_adapter": "functioncall"}
+{"id": "route_funccall_v1_09", "query": "Invoke a tool to look up the population of Japan.", "expected_adapter": "functioncall"}
+{"id": "route_funccall_v1_10", "query": "Call get_user_profile with user_id=42.", "expected_adapter": "functioncall"}
+{"id": "route_funccall_v1_11", "query": "Pick the right tool to check the next available appointment slot.", "expected_adapter": "functioncall"}
+{"id": "route_funccall_v1_12", "query": "Use the function definitions to book a flight from SFO to JFK.", "expected_adapter": "functioncall"}
+{"id": "route_funccall_v1_13", "query": "Function call: get_news_headlines(topic='AI', limit=5).", "expected_adapter": "functioncall"}
+{"id": "route_funccall_v1_14", "query": "Make a call to get the latest cryptocurrency prices for BTC and ETH.", "expected_adapter": "functioncall"}
+{"id": "route_sql_v1_00", "query": "Write a SQL query to find the top 10 customers by total revenue in 2023.", "expected_adapter": "sql"}
+{"id": "route_sql_v1_01", "query": "Generate a SQL statement to select all employees in the Sales department.", "expected_adapter": "sql"}
+{"id": "route_sql_v1_02", "query": "Spider task: question='which films grossed more than 100 million?'  schema=films(id, title, gross)", "expected_adapter": "sql"}
+{"id": "route_sql_v1_03", "query": "SQL: list product names where stock < 5 ordered by name.", "expected_adapter": "sql"}
+{"id": "route_sql_v1_04", "query": "Translate to SQL: average salary per department where headcount > 50.", "expected_adapter": "sql"}
+{"id": "route_sql_v1_05", "query": "Write SQL to JOIN customers and orders, returning customer names and order counts.", "expected_adapter": "sql"}
+{"id": "route_sql_v1_06", "query": "SQL query: find duplicate emails in the users table.", "expected_adapter": "sql"}
+{"id": "route_sql_v1_07", "query": "Generate a SQL UPDATE to set status='shipped' WHERE order_id=12345.", "expected_adapter": "sql"}
+{"id": "route_sql_v1_08", "query": "Write a SQL aggregation: sum of sales by month for the last year.", "expected_adapter": "sql"}
+{"id": "route_sql_v1_09", "query": "Translate to SQL: 'Show me all books published before 1990 by author Asimov'.", "expected_adapter": "sql"}
+{"id": "route_sql_v1_10", "query": "Spider: 'list cities with population above 1M' schema=cities(id, name, pop, country).", "expected_adapter": "sql"}
+{"id": "route_sql_v1_11", "query": "Write a SQL query for ranking products by sales using window functions.", "expected_adapter": "sql"}
+{"id": "route_sql_v1_12", "query": "Generate SQL: SELECT count of distinct customers per region.", "expected_adapter": "sql"}
+{"id": "route_sql_v1_13", "query": "Convert this question to SQL: 'How many orders shipped in May 2024?'", "expected_adapter": "sql"}
+{"id": "route_sql_v1_14", "query": "Write a SQL query: top 5 most expensive items in the orders table.", "expected_adapter": "sql"}
+{"id": "route_cypher_v1_00", "query": "Write a Cypher query to find all friends-of-friends of node X.", "expected_adapter": "cypher"}
+{"id": "route_cypher_v1_01", "query": "Generate Cypher: MATCH the shortest path between Alice and Bob.", "expected_adapter": "cypher"}
+{"id": "route_cypher_v1_02", "query": "Cypher: list all movies that Tom Hanks acted in.", "expected_adapter": "cypher"}
+{"id": "route_cypher_v1_03", "query": "Translate to Cypher: 'Find all employees in the company graph who report to manager M'.", "expected_adapter": "cypher"}
+{"id": "route_cypher_v1_04", "query": "Neo4j query to get all nodes connected to User(id=1) within 2 hops.", "expected_adapter": "cypher"}
+{"id": "route_cypher_v1_05", "query": "Write Cypher to count outgoing :KNOWS relationships from each Person.", "expected_adapter": "cypher"}
+{"id": "route_cypher_v1_06", "query": "Cypher query: find all triangle motifs in a friendship graph.", "expected_adapter": "cypher"}
+{"id": "route_cypher_v1_07", "query": "Generate a Cypher MERGE statement to upsert a Product node.", "expected_adapter": "cypher"}
+{"id": "route_cypher_v1_08", "query": "Translate to Cypher: 'Show me drugs that interact with both DrugA and DrugB'.", "expected_adapter": "cypher"}
+{"id": "route_cypher_v1_09", "query": "Cypher: find disconnected components in the citation graph.", "expected_adapter": "cypher"}
+{"id": "route_cypher_v1_10", "query": "Write a graph query to get all books authored by Asimov in Cypher syntax.", "expected_adapter": "cypher"}
+{"id": "route_cypher_v1_11", "query": "Cypher: return the top 10 most-followed users by COUNT of incoming :FOLLOWS edges.", "expected_adapter": "cypher"}
+{"id": "route_cypher_v1_12", "query": "Translate this English question to Cypher: 'What courses does Alice teach?'", "expected_adapter": "cypher"}
+{"id": "route_cypher_v1_13", "query": "Cypher MATCH pattern to find all paths from City A to City B via roads.", "expected_adapter": "cypher"}
+{"id": "route_cypher_v1_14", "query": "Generate a Cypher OPTIONAL MATCH for users without a profile photo.", "expected_adapter": "cypher"}
+{"id": "route_bash_v1_00", "query": "How do I find all .py files modified in the last 7 days?", "expected_adapter": "bash"}
+{"id": "route_bash_v1_01", "query": "Bash command to recursively delete empty directories under /tmp.", "expected_adapter": "bash"}
+{"id": "route_bash_v1_02", "query": "Write a shell command to count the number of lines in all .log files.", "expected_adapter": "bash"}
+{"id": "route_bash_v1_03", "query": "How do I tar.gz the entire /home/user directory excluding .cache?", "expected_adapter": "bash"}
+{"id": "route_bash_v1_04", "query": "Bash one-liner to grep for ERROR in nginx logs and show the surrounding 5 lines.", "expected_adapter": "bash"}
+{"id": "route_bash_v1_05", "query": "Shell command: kill all processes whose name contains 'zombie'.", "expected_adapter": "bash"}
+{"id": "route_bash_v1_06", "query": "How to use rsync to mirror /src to /dst, deleting extras?", "expected_adapter": "bash"}
+{"id": "route_bash_v1_07", "query": "Bash: print the largest 10 files in the current directory tree.", "expected_adapter": "bash"}
+{"id": "route_bash_v1_08", "query": "Find duplicate files by md5 hash and print their paths.", "expected_adapter": "bash"}
+{"id": "route_bash_v1_09", "query": "Shell command to replace 'foo' with 'bar' in all .txt files in place.", "expected_adapter": "bash"}
+{"id": "route_bash_v1_10", "query": "Bash: pipe ls output to xargs to chmod 644 every regular file.", "expected_adapter": "bash"}
+{"id": "route_bash_v1_11", "query": "Shell: extract all email addresses from a log file using grep -oE.", "expected_adapter": "bash"}
+{"id": "route_bash_v1_12", "query": "Bash one-liner to monitor disk usage of /var/log every 5 seconds.", "expected_adapter": "bash"}
+{"id": "route_bash_v1_13", "query": "Find all symlinks under /etc that point to nonexistent targets.", "expected_adapter": "bash"}
+{"id": "route_bash_v1_14", "query": "Shell command to convert epoch timestamp to ISO date for each line.", "expected_adapter": "bash"}
+{"id": "route_sparql_v1_00", "query": "Write a SPARQL query for: 'What is the population of Berlin?' on Wikidata.", "expected_adapter": "sparql"}
+{"id": "route_sparql_v1_01", "query": "SPARQL on Wikidata: list all films directed by Christopher Nolan.", "expected_adapter": "sparql"}
+{"id": "route_sparql_v1_02", "query": "Generate SPARQL: 'When was Albert Einstein born?'", "expected_adapter": "sparql"}
+{"id": "route_sparql_v1_03", "query": "Wikidata SPARQL: countries that share a border with France.", "expected_adapter": "sparql"}
+{"id": "route_sparql_v1_04", "query": "SPARQL ASK: is the capital of Japan Tokyo?", "expected_adapter": "sparql"}
+{"id": "route_sparql_v1_05", "query": "Translate to SPARQL: 'What are the children of Queen Elizabeth II?'", "expected_adapter": "sparql"}
+{"id": "route_sparql_v1_06", "query": "SPARQL: list all programming languages with their inception dates.", "expected_adapter": "sparql"}
+{"id": "route_sparql_v1_07", "query": "Wikidata triple-store query: find chemical compounds named after Marie Curie.", "expected_adapter": "sparql"}
+{"id": "route_sparql_v1_08", "query": "SPARQL with qualifier path: 'When did Barack Obama become president?'", "expected_adapter": "sparql"}
+{"id": "route_sparql_v1_09", "query": "Generate Wikidata SPARQL: drugs treating diabetes ordered by approval date.", "expected_adapter": "sparql"}
+{"id": "route_sparql_v1_10", "query": "SPARQL: which Nobel laureates were born in Vienna?", "expected_adapter": "sparql"}
+{"id": "route_sparql_v1_11", "query": "Translate to SPARQL: 'List all Premier League clubs founded before 1900'.", "expected_adapter": "sparql"}
+{"id": "route_sparql_v1_12", "query": "Wikidata SPARQL: 'How many languages are spoken in India?'", "expected_adapter": "sparql"}
+{"id": "route_sparql_v1_13", "query": "SPARQL ASK: did Wikipedia exist before 2001?", "expected_adapter": "sparql"}
+{"id": "route_sparql_v1_14", "query": "SPARQL on RDF: find paintings by van Gogh ordered by creation year.", "expected_adapter": "sparql"}
+{"id": "route_regex_v1_00", "query": "Write a Python regex to match a US ZIP code (5 or 9 digit format).", "expected_adapter": "regex"}
+{"id": "route_regex_v1_01", "query": "Regex pattern for validating an IPv4 address.", "expected_adapter": "regex"}
+{"id": "route_regex_v1_02", "query": "Generate a regex that matches any valid email address.", "expected_adapter": "regex"}
+{"id": "route_regex_v1_03", "query": "Regex: capture all phone numbers in (xxx) xxx-xxxx format.", "expected_adapter": "regex"}
+{"id": "route_regex_v1_04", "query": "Write a regex to extract dates in YYYY-MM-DD format.", "expected_adapter": "regex"}
+{"id": "route_regex_v1_05", "query": "Regex pattern matching hex color codes like #FFAA33 or #fff.", "expected_adapter": "regex"}
+{"id": "route_regex_v1_06", "query": "Generate a regex for valid IBAN account numbers.", "expected_adapter": "regex"}
+{"id": "route_regex_v1_07", "query": "Pattern matching: extract URLs from a text document.", "expected_adapter": "regex"}
+{"id": "route_regex_v1_08", "query": "Write a regex that matches credit card numbers with optional dashes.", "expected_adapter": "regex"}
+{"id": "route_regex_v1_09", "query": "Regex: a valid Python identifier (letter/underscore start, then alphanumeric).", "expected_adapter": "regex"}
+{"id": "route_regex_v1_10", "query": "Match any valid HTML tag (opening or closing) with regex.", "expected_adapter": "regex"}
+{"id": "route_regex_v1_11", "query": "Generate a regex for time strings in HH:MM 24-hour format.", "expected_adapter": "regex"}
+{"id": "route_regex_v1_12", "query": "Regex: match a string that starts with at least 3 digits.", "expected_adapter": "regex"}
+{"id": "route_regex_v1_13", "query": "Pattern for license plate format ABC-1234.", "expected_adapter": "regex"}
+{"id": "route_regex_v1_14", "query": "Write a regex to find every word containing exactly two vowels.", "expected_adapter": "regex"}
+{"id": "route_mermaid_v1_00", "query": "Generate a Mermaid sequence diagram for a user logging into a web app.", "expected_adapter": "mermaid"}
+{"id": "route_mermaid_v1_01", "query": "Create a sequenceDiagram showing API \u2192 DB \u2192 Cache interactions.", "expected_adapter": "mermaid"}
+{"id": "route_mermaid_v1_02", "query": "Mermaid: sequence diagram of a payment processing flow with Stripe.", "expected_adapter": "mermaid"}
+{"id": "route_mermaid_v1_03", "query": "Draw a sequenceDiagram for the OAuth2 authorization code flow.", "expected_adapter": "mermaid"}
+{"id": "route_mermaid_v1_04", "query": "Mermaid sequence diagram: file upload from browser through CDN to S3.", "expected_adapter": "mermaid"}
+{"id": "route_mermaid_v1_05", "query": "Generate a Mermaid diagram of microservices communicating: A \u2192 B \u2192 C.", "expected_adapter": "mermaid"}
+{"id": "route_mermaid_v1_06", "query": "Sequence diagram in Mermaid for a chat message round trip.", "expected_adapter": "mermaid"}
+{"id": "route_mermaid_v1_07", "query": "Mermaid: sequenceDiagram for a video streaming session.", "expected_adapter": "mermaid"}
+{"id": "route_mermaid_v1_08", "query": "Create a Mermaid sequence diagram of a gRPC client-server call.", "expected_adapter": "mermaid"}
+{"id": "route_mermaid_v1_09", "query": "Mermaid sequenceDiagram: user adds item to cart and checks out.", "expected_adapter": "mermaid"}
+{"id": "route_mermaid_v1_10", "query": "Generate a sequence diagram showing CI pipeline stages.", "expected_adapter": "mermaid"}
+{"id": "route_mermaid_v1_11", "query": "Mermaid: order placement flow involving Customer, OrderService, PaymentService.", "expected_adapter": "mermaid"}
+{"id": "route_mermaid_v1_12", "query": "Sequence diagram for a multi-factor authentication interaction in Mermaid.", "expected_adapter": "mermaid"}
+{"id": "route_mermaid_v1_13", "query": "Create a Mermaid diagram for distributed tracing across 3 services.", "expected_adapter": "mermaid"}
+{"id": "route_mermaid_v1_14", "query": "Mermaid sequenceDiagram of a webhook delivery and retry mechanism.", "expected_adapter": "mermaid"}
+{"id": "route_reasoning_v1_00", "query": "If a train leaves Boston at 3pm at 60mph and another leaves NY at 4pm at 80mph, when do they meet?", "expected_adapter": "reasoning"}
+{"id": "route_reasoning_v1_01", "query": "Step-by-step proof: show that the sum of two odd numbers is even.", "expected_adapter": "reasoning"}
+{"id": "route_reasoning_v1_02", "query": "Reason through: how many integers between 1 and 100 are divisible by both 3 and 5?", "expected_adapter": "reasoning"}
+{"id": "route_reasoning_v1_03", "query": "Derive the formula for the area of a circle from first principles.", "expected_adapter": "reasoning"}
+{"id": "route_reasoning_v1_04", "query": "Multi-step problem: a tank fills in 6 hours, drains in 9 hours, both open how long?", "expected_adapter": "reasoning"}
+{"id": "route_reasoning_v1_05", "query": "Explain step by step why 2^10 = 1024.", "expected_adapter": "reasoning"}
+{"id": "route_reasoning_v1_06", "query": "Reason about: a farmer has 17 sheep, all but 9 die \u2014 how many remain?", "expected_adapter": "reasoning"}
+{"id": "route_reasoning_v1_07", "query": "Calculate by reasoning: how many 3-digit numbers contain a 7?", "expected_adapter": "reasoning"}
+{"id": "route_reasoning_v1_08", "query": "Show your work: prove sqrt(2) is irrational.", "expected_adapter": "reasoning"}
+{"id": "route_reasoning_v1_09", "query": "Step by step: how many ways can you arrange the letters in 'BANANA'?", "expected_adapter": "reasoning"}
+{"id": "route_reasoning_v1_10", "query": "Reason: if I double a number and add 4, I get 22; what's the number?", "expected_adapter": "reasoning"}
+{"id": "route_reasoning_v1_11", "query": "Explain why dividing by zero is undefined, step by step.", "expected_adapter": "reasoning"}
+{"id": "route_reasoning_v1_12", "query": "Multi-step calculation: compound interest on $1000 at 5% over 10 years.", "expected_adapter": "reasoning"}
+{"id": "route_reasoning_v1_13", "query": "Derive the velocity needed to escape Earth's gravity from energy conservation.", "expected_adapter": "reasoning"}
+{"id": "route_reasoning_v1_14", "query": "Step-by-step: solve the quadratic 2x^2 + 3x - 5 = 0.", "expected_adapter": "reasoning"}
+{"id": "route_base_00", "query": "Tell me a fun fact about whales.", "expected_adapter": "reasoning"}
+{"id": "route_base_01", "query": "Write a haiku about autumn.", "expected_adapter": "reasoning"}
+{"id": "route_base_02", "query": "Translate 'good morning' to Spanish, French, and Japanese.", "expected_adapter": "reasoning"}
+{"id": "route_base_03", "query": "What's the difference between cilantro and parsley?", "expected_adapter": "reasoning"}
+{"id": "route_base_04", "query": "Recommend three popular romance novels published in the last decade.", "expected_adapter": "reasoning"}
+{"id": "route_base_05", "query": "Summarize the plot of The Great Gatsby in three sentences.", "expected_adapter": "reasoning"}
+{"id": "route_base_06", "query": "Give me a recipe for chocolate chip cookies.", "expected_adapter": "reasoning"}
+{"id": "route_base_07", "query": "What are some healthy breakfast ideas?", "expected_adapter": "reasoning"}
+{"id": "route_base_08", "query": "Tell me about the history of the Eiffel Tower.", "expected_adapter": "reasoning"}
+{"id": "route_base_09", "query": "What are the seven wonders of the world?", "expected_adapter": "reasoning"}
+{"id": "route_base_10", "query": "Suggest a name for a new coffee shop.", "expected_adapter": "reasoning"}
+{"id": "route_base_11", "query": "Compose a short toast for my parents' anniversary.", "expected_adapter": "reasoning"}
+{"id": "route_base_12", "query": "Give me three ideas for a weekend trip from Seattle.", "expected_adapter": "reasoning"}
+{"id": "route_base_13", "query": "What do dolphins typically eat?", "expected_adapter": "reasoning"}
+{"id": "route_base_14", "query": "Write a short bedtime story for a 5-year-old.", "expected_adapter": "reasoning"}

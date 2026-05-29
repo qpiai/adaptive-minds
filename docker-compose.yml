@@ -1,20 +1,64 @@
+# Adaptive Minds — full stack via Docker Compose.
+#
+# One command:
+#   docker compose up -d
+#   open http://localhost:7007
+#
+# Defaults to the paper's 30-adapter catalog. First boot is ~15–30 min
+# (downloads Qwen2.5-7B + 30 LoRA adapters into named volumes); subsequent
+# starts are instant.
+#
+# How LoRAs are loaded:
+#   `prefetch` runs first, downloading every adapter in $AM_LORA_SUBDIRS
+#   into the `lora-cache` volume. Then `vllm` boots with --lora-modules
+#   pointing at those local paths.
+#
+# Swap to the 2-adapter smoke catalog (fast first boot, ~5 min):
+#   in .env set AM_CATALOG=/app/catalogs/qwen25_smoke.yaml
+#                 AM_LORA_SUBDIRS=qwen2.5-7b/qwen25_chem_v1_grpo,qwen2.5-7b/qwen25_sql_v1
+#   and trim the `vllm` --lora-modules list below to just chemistry + sql.
+#
+# Browser → API is proxied via the Next.js `ui` service (`/api/am/* →
+# server:8765`). No host-port wiring needed in the browser bundle, so the
+# same image works whether you hit localhost, a remote IP, or a reverse
+# proxy — no NEXT_PUBLIC_AM_API_BASE override required.
+
 services:
-  adaptive-lora:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: adaptive-minds-server
-    gpus: all
+  prefetch:
+    image: python:3.11-slim
+    container_name: am-prefetch
     environment:
-      - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
-      - HF_TOKEN=${HF_TOKEN}
+      HF_TOKEN: ${HF_TOKEN:-}
+      HF_HUB_ENABLE_HF_TRANSFER: "1"
+      LORA_REPO: ${AM_LORA_REPO:-pavan01729/adaptive-minds-loras}
+      # All 30 paper-catalog adapters. Override AM_LORA_SUBDIRS in .env to
+      # prefetch a subset (e.g. the smoke pair) and trim --lora-modules
+      # below to match.
+      LORA_SUBDIRS: ${AM_LORA_SUBDIRS:-qwen2.5-7b/qwen25_sql_v1,qwen2.5-7b/qwen25_cypher_v1,qwen2.5-7b/qwen25_bash_v1,qwen2.5-7b/qwen25_sparql_v1,qwen2.5-7b/qwen25_mermaid_v1,qwen2.5-7b/qwen25_pii_v1,qwen2.5-7b/qwen25_quantum_v1_grpo,qwen2.5-7b/qwen25_legal_v1_grpo,qwen2.5-7b/qwen25_chem_v1_grpo,qwen2.5-7b/qwen25_reasoning_v1,qwen2.5-7b/qwen25_astrophysics_v1,qwen2.5-7b/qwen25_biology_v1,qwen2.5-7b/qwen25_case_law_v1,qwen2.5-7b/qwen25_cti_v1_grpo,qwen2.5-7b/qwen25_economics_v1,qwen2.5-7b/qwen25_finance_v1,qwen2.5-7b/qwen25_funccall_v1,qwen2.5-7b/qwen25_history_v1,qwen2.5-7b/qwen25_marketing_v1,qwen2.5-7b/qwen25_medicine_v1,qwen2.5-7b/qwen25_music_theory_v1,qwen2.5-7b/qwen25_philosophy_v1,qwen2.5-7b/qwen25_psychology_v1,qwen2.5-7b/qwen25_regex_v1,qwen2.5-7b/qwen25_sociology_v1,qwen2.5-7b/qwen25_theorem_v1_grpo,qwen2.5-7b/qwen25_verilog_v1,qwen2.5-7b/qwen25_dataframe_ds_v23_sft,qwen2.5-7b/qwen25_json_schema_v23_sft,qwen2.5-7b/qwen25_openapi_v23_sft}
+      LORA_OUT_DIR: /loras
     volumes:
-      # Only mount build directory if needed for other purposes
-      - ./build:/app/build
+      - lora-cache:/loras
+      - ./docker/prefetch.py:/prefetch.py:ro
+    command:
+      - bash
+      - -lc
+      - "pip install --quiet --no-cache-dir 'huggingface_hub>=0.24' hf_transfer && python3 /prefetch.py"
+    restart: "no"
+
+  vllm:
+    image: vllm/vllm-openai:v0.6.3
+    container_name: am-vllm
+    restart: unless-stopped
     ports:
-      - "8765:8765"  # FastAPI default port
-      - "8501:8501"  # Streamlit port
+      - "${AM_VLLM_PORT:-8000}:8000"
+    environment:
+      HF_TOKEN: ${HF_TOKEN:-}
+    volumes:
+      - hf-cache:/root/.cache/huggingface
+      - lora-cache:/loras:ro
+    depends_on:
+      prefetch:
+        condition: service_completed_successfully
     deploy:
       resources:
         reservations:
@@ -22,39 +66,88 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
-    # Step by step: 1) Download models, 2) Start server, 3) Wait for server, 4) Start UI
     command: >
-      sh -c "
-        echo '📥 STEP 1: Downloading models from Hugging Face...' &&
-        python /app/build/download_models.py &&
-        echo '✅ STEP 1 COMPLETE: All models downloaded!' &&
-        echo '' &&
-        echo '🚀 STEP 2: Starting FastAPI server...' &&
-        cd /app/build &&
-        python server.py &
-        SERVER_PID=\$! &&
-        echo '✅ STEP 2 COMPLETE: FastAPI server started (PID: '\$SERVER_PID')' &&
-        echo '' &&
-        echo '⏳ STEP 3: Waiting for server to be fully ready...' &&
-        sleep 20 &&
-        attempt=1 &&
-        while ! curl -s http://localhost:8765/status > /dev/null 2>&1; do
-          echo '⏳ Attempt '\$attempt': Server not ready yet, waiting 30 more seconds...' &&
-          sleep 30 &&
-          attempt=\$((attempt + 1)) &&
-          if [ \$attempt -gt 20 ]; then
-            echo '❌ Server failed to start after 100 seconds' &&
-            exit 1
-          fi
-        done &&
-        echo '✅ STEP 3 COMPLETE: FastAPI server is ready and responding!' &&
-        echo '' &&
-        echo '🎨 STEP 4: Starting Streamlit frontend...' &&
-        streamlit run /app/build/app_frontend.py --server.port 8501 --server.address 0.0.0.0 &
-        echo '✅ STEP 4 COMPLETE: Streamlit frontend started!' &&
-        echo '' &&
-        echo '🎉 ALL SYSTEMS READY!' &&
-        echo '📡 FastAPI: http://localhost:8765' &&
-        echo '🌐 Streamlit: http://localhost:8501' &&
-        wait
-      " 
+      --model Qwen/Qwen2.5-7B-Instruct
+      --host 0.0.0.0
+      --port 8000
+      --max-lora-rank 64
+      --max-loras 4
+      --enable-lora
+      --lora-modules
+      sql=/loras/qwen2.5-7b/qwen25_sql_v1
+      cypher=/loras/qwen2.5-7b/qwen25_cypher_v1
+      bash=/loras/qwen2.5-7b/qwen25_bash_v1
+      sparql=/loras/qwen2.5-7b/qwen25_sparql_v1
+      mermaid=/loras/qwen2.5-7b/qwen25_mermaid_v1
+      pii=/loras/qwen2.5-7b/qwen25_pii_v1
+      quantum=/loras/qwen2.5-7b/qwen25_quantum_v1_grpo
+      legal=/loras/qwen2.5-7b/qwen25_legal_v1_grpo
+      chemistry=/loras/qwen2.5-7b/qwen25_chem_v1_grpo
+      reasoning=/loras/qwen2.5-7b/qwen25_reasoning_v1
+      astrophysics=/loras/qwen2.5-7b/qwen25_astrophysics_v1
+      biology=/loras/qwen2.5-7b/qwen25_biology_v1
+      caselaw=/loras/qwen2.5-7b/qwen25_case_law_v1
+      cti=/loras/qwen2.5-7b/qwen25_cti_v1_grpo
+      economics=/loras/qwen2.5-7b/qwen25_economics_v1
+      finance=/loras/qwen2.5-7b/qwen25_finance_v1
+      functioncall=/loras/qwen2.5-7b/qwen25_funccall_v1
+      history=/loras/qwen2.5-7b/qwen25_history_v1
+      marketing=/loras/qwen2.5-7b/qwen25_marketing_v1
+      medicine=/loras/qwen2.5-7b/qwen25_medicine_v1
+      musictheory=/loras/qwen2.5-7b/qwen25_music_theory_v1
+      philosophy=/loras/qwen2.5-7b/qwen25_philosophy_v1
+      psychology=/loras/qwen2.5-7b/qwen25_psychology_v1
+      regex=/loras/qwen2.5-7b/qwen25_regex_v1
+      sociology=/loras/qwen2.5-7b/qwen25_sociology_v1
+      theorem=/loras/qwen2.5-7b/qwen25_theorem_v1_grpo
+      verilog=/loras/qwen2.5-7b/qwen25_verilog_v1
+      dataframeds=/loras/qwen2.5-7b/qwen25_dataframe_ds_v23_sft
+      jsonschema=/loras/qwen2.5-7b/qwen25_json_schema_v23_sft
+      openapi=/loras/qwen2.5-7b/qwen25_openapi_v23_sft
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/v1/models', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      start_period: 900s   # 30-adapter cold start can be long
+      retries: 3
+
+  server:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.server
+    container_name: am-server
+    restart: unless-stopped
+    ports:
+      # Override AM_SERVER_PORT in your .env if 8765 conflicts on your host.
+      - "${AM_SERVER_PORT:-8765}:8765"
+    environment:
+      VLLM_BASE: ${VLLM_BASE:-http://vllm:8000/v1}
+      AM_CATALOG: ${AM_CATALOG:-/app/catalogs/qwen25_30.yaml}
+    depends_on:
+      vllm:
+        condition: service_healthy
+
+  ui:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.ui
+      args:
+        # Empty → the UI bundle uses relative paths (`/api/am/*`), and the
+        # Next.js server proxies them to the `server` container over the
+        # compose network. Same image works for localhost, public IP, and
+        # reverse-proxy deployments — no rebuild on host change.
+        NEXT_PUBLIC_AM_API_BASE: ${NEXT_PUBLIC_AM_API_BASE:-}
+        NEXT_PUBLIC_DEFAULT_MODE: ${NEXT_PUBLIC_DEFAULT_MODE:-router}
+    container_name: am-ui
+    restart: unless-stopped
+    ports:
+      - "${AM_UI_PORT:-7007}:7007"
+    depends_on:
+      server:
+        condition: service_healthy
+
+volumes:
+  hf-cache:
+    name: am-hf-cache
+  lora-cache:
+    name: am-lora-cache
