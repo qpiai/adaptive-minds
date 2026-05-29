@@ -26,9 +26,9 @@ https://github.com/user-attachments/assets/45a8f228-dac0-4f77-8a89-93d03a697d06
 
 ---
 
-## What is this?
+## 🤔 Why Adaptive Minds?
 
-> **Adapters are tools — and like any tool, the quality of each one matters enormously.** Train good adapters, and the framework takes care of the rest: discovering them, picking the right one(s) for each query, and composing them into an answer. Better adapters strictly help; weak ones simply don't get selected.
+> **Adapters are tools — and like any tool, the quality of each one matters enormously.** Train good adapters, and the framework takes care of the rest: discovering them, picking the right one(s) for each query, and composing them into an answer.
 
 Two of the most useful ideas in modern LLMs have lived in separate worlds: **parameter-efficient specialization** (LoRA adapters that make a base model great at one domain) and **tool-augmented agents** (models that reason by calling tools). **Adaptive Minds unifies them** — it treats each LoRA adapter as a *named, callable tool* and lets the base model decide **which** adapter to use, **when**, **how often**, and **in what order**.
 

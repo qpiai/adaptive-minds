@@ -1,15 +1,16 @@
-# Contributing
+# 🤝 Contributing
 
-Thanks for considering a contribution. Adaptive Minds aims to be a small,
-hackable reference implementation — keep PRs focused and minimal.
+First off — **thank you** for considering a contribution! 🙏 Adaptive Minds aims
+to be a small, hackable reference implementation, so please keep PRs focused and
+minimal. Issues, questions, and ideas are just as welcome as code.
 
-## Dev setup
+## 🛠️ Dev setup
 
 ```bash
 git clone https://github.com/qpiai/adaptive-minds
 cd adaptive-minds
 python -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev,serve,ui,tools]"
+pip install -e ".[dev,serve,tools]"
 ```
 
 Run the test suite:
@@ -24,7 +25,10 @@ Lint:
 ruff check adaptive_minds tests
 ```
 
-## How to add a new adapter
+The UI is a Next.js app under `ui/` — `cd ui && npm install && npm run dev` if
+you're working on it.
+
+## 🧩 How to add a new adapter
 
 1. Train (or pick) a LoRA on `Qwen/Qwen2.5-7B-Instruct` (or whatever the
    catalog's `base_model.hf_id` points at).
@@ -43,7 +47,10 @@ ruff check adaptive_minds tests
 4. Re-launch vLLM and the server (`docker compose restart vllm server`).
    The new adapter is reachable at `POST /chat` and visible in the UI.
 
-## How to add a new external tool
+A good `description` and `keywords` matter — they're what the router reads, so
+please make them clear and specific. 🙂
+
+## 🔧 How to add a new external tool
 
 External tools live in `adaptive_minds/external_tools.py`. To add one:
 
@@ -55,31 +62,40 @@ External tools live in `adaptive_minds/external_tools.py`. To add one:
 3. Add a one-line help string to `TOOL_DESCRIPTIONS` in
    `adaptive_minds/tools.py` — that's what the agent sees in its prompt.
 
-Tools run in-process; if your tool needs subprocess isolation, copy the
+Tools run in-process; if your tool needs subprocess isolation, please copy the
 `code_handler` / `shell_handler` patterns.
 
-## How to add a benchmark to the evals
+## 📊 How to add a benchmark to the evals
 
 Drop a new script under `evals/`; reuse `load_catalog`, `run_router`,
 `run_agent`, and `vllm_chat` from `adaptive_minds`. Add a row to the
 README in that folder describing the paper claim, command, and expected
 output shape.
 
-## PR checklist
+## ✅ PR checklist
 
-- [ ] `pytest tests/ -v` passes locally (the CI re-runs it across 3.10/3.11/3.12)
+Before opening a PR, please make sure:
+
+- [ ] `pytest tests/ -v` passes locally (CI re-runs it across 3.10/3.11/3.12)
 - [ ] `ruff check adaptive_minds tests` is clean
 - [ ] Any new public function has a one-line docstring
 - [ ] README / quickstart still works end-to-end if you changed the
       runtime, CLI, or docker setup
 - [ ] No hardcoded paths or credentials in committed files
 
-## What we won't merge
+Don't worry if you miss something — open the PR anyway and we'll help you get it
+over the line. 🚀
 
-- Backwards-compat shims for the old `playground/` / `build/` split — v0.1
-  is a clean break
-- Vendored third-party dependencies (use the optional extras instead)
-- Per-benchmark training scripts (we ship one shared SFT recipe; specific
-  GRPO recipes are on the v0.2 roadmap)
+## 🚫 What we (probably) won't merge
+
+- Vendored third-party dependencies (please use the optional extras instead)
 - Code that adds heavy runtime deps (transformers, torch, peft) to the
-  base install — those belong in `.[training]` or `.[vllm]` extras
+  base install — those belong in the `.[training]` or `.[vllm]` extras
+- Large, unfocused PRs that touch many areas at once — smaller is easier to
+  review and much more likely to land
+
+## 🙏 Thanks
+
+Thank you for taking the time to make Adaptive Minds better — every issue, idea,
+and PR genuinely helps. If something here is unclear or could be smoother,
+please tell us; we'd love to fix it.
