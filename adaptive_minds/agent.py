@@ -44,7 +44,7 @@ Example (multi-call planning):
   THOUGHT: independent sub-tasks; I'll fan them out.
   CALL: mermaid  | sequenceDiagram\\n  A->>B: ping\\n  B->>A: pong
   CALL: chemistry | Mechanism of action for tirzepatide.
-  CALL: shell    | wc -l x.v | awk '$1 > 80 {print "too long"}'
+  CALL: shell    | wc -l x.v | awk '$1 > 80 {{print "too long"}}'
 
 == rules ==
   1. Arguments are plain text by default. Only `pulp` requires JSON.

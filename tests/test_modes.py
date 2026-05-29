@@ -73,3 +73,19 @@ def test_chat_rejects_unknown_mode(client) -> None:
     """Pydantic rejects any mode outside the four-literal set with 422."""
     r = client.post("/chat", json={"query": "x", "mode": "wat"})
     assert r.status_code == 422
+
+
+# ---------- DEFAULT_AGENT_PROMPT.format() regression -----------------------
+
+def test_default_agent_prompt_formats() -> None:
+    """run_agent() str.format()s the prompt. Any unescaped `{...}` in the
+    template (e.g. the awk example `{print "too long"}`) raises KeyError at
+    request time. This caught it once; keep it caught."""
+    from adaptive_minds.agent import DEFAULT_AGENT_PROMPT
+    rendered = DEFAULT_AGENT_PROMPT.format(
+        tool_menu="  - calculator — sympy",
+        expert_menu="  - sql — SQL expert",
+        query="hello",
+    )
+    assert "User query: hello" in rendered
+    assert '{print "too long"}' in rendered  # the awk literal survives
