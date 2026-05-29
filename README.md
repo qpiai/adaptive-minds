@@ -18,9 +18,9 @@
 
 ---
 
-![Adaptive Minds UI](docs/screenshot.png)
+![Adaptive Minds demo](docs/demo.gif)
 
-<sub><i>The Next.js chat UI. Four modes — Router · Agent · Auto · LangGraph — over the same FastAPI / vLLM stack. Capture your own with <code>python scripts/capture_demo.py</code> after <code>docker compose up -d</code>.</i></sub>
+<sub><i>The Next.js chat UI driving all four modes — Router · Agent · Auto · LangGraph — over the same FastAPI / vLLM stack. ▶️ <b><a href="docs/demo.mp4">Watch the full-quality MP4</a></b>. Regenerate after <code>docker compose up -d</code> with <code>python scripts/capture_demo.py</code>.</i></sub>
 
 ---
 
