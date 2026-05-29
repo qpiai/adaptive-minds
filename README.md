@@ -128,13 +128,15 @@ print(r["adapter_id"], "→", r["response"])
 │  (port 7007) │    │  /agent       │    │  + LoRA adapters by name   │
 └──────────────┘    └───────────────┘    └────────────────────────────┘
                             │
-                            ├─ run_router  ── single-step semantic routing (paper §5.2)
-                            └─ run_agent   ── ReAct loop with adapters+tools (paper §5.4)
+                            ├─ run_router      ── single-step semantic routing (paper §5.2)
+                            ├─ run_agent       ── ReAct loop with adapters+tools (paper §5.4)
+                            ├─ run_auto        ── heuristic dispatcher: router vs agent
+                            └─ langgraph_agent ── StateGraph (plan → dispatch → synthesise)
 ```
 
 - **Single source of truth**: one YAML catalog drives both the `vllm serve` launch command and the runtime's adapter selection.
 - **No model weights in the server**: `adaptive_minds.server` is fastapi + pydantic + requests. All inference is HTTP to vLLM.
-- **Small core**: ~1.4 k lines across nine `.py` files; every public function has a docstring that says *why* it exists.
+- **Small core**: ~1.66 k lines across eleven `.py` files; every public function has a docstring that says *why* it exists.
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for a fuller walk-through.
 
